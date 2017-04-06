@@ -1,4 +1,4 @@
-# -*-coding:Utf-8 -*
+# -*- coding: utf-8 -*-
 
 from PyQt5.QtWidgets import (QStyleFactory, QApplication)
 
