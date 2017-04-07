@@ -9,7 +9,7 @@ if __name__ == '__main__':
     app = QApplication(sys.argv)
     app.setStyle(QStyleFactory.create("fusion"))
 
-    main_frame = mf.mainFrame()
+    main_frame = mf.MainFrame()
     main_frame.show()
 
     sys.exit(app.exec_())
