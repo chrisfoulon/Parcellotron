@@ -2,7 +2,8 @@
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (QWidget, QLCDNumber, QSlider, QTabWidget, QAction,
-    QVBoxLayout, QApplication, QDesktopWidget, QCheckBox, QMainWindow, qApp)
+    QVBoxLayout, QApplication, QDesktopWidget, QCheckBox, QMainWindow, qApp,
+    QListWidget, QComboBox)
 
 class MainFrame(QMainWindow):
     """ Main parcellation frame
@@ -36,6 +37,20 @@ class MainFrame(QMainWindow):
         menubar = self.menuBar()
         fileMenu = menubar.addMenu('&File')
         fileMenu.addAction(exitAction)
+
+        listWidget = QComboBox()
+
+        #Resize width and height
+        listWidget.resize(300,120)
+
+        listWidget.addItem("Item 1");
+        listWidget.addItem("Item 2");
+        listWidget.addItem("Item 3");
+        listWidget.addItem("Item 4");
+
+        vBoxlayout = QVBoxLayout()
+        vBoxlayout.addWidget(listWidget)
+        self.tabs.setLayout(vBoxlayout)
 
         self.tabs.addTab(self.tab1,"Tab 1")
         self.tabs.addTab(self.tab2,"Tab 2")
