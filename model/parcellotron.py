@@ -3,16 +3,23 @@
 import abc
 import nibabel as nib
 import numpy as np
+import utils as ut
+import os
+
+test_path = "/root/user/filename.ext1.ext2"
+os.path.basename(ut.split_ext(test_path)[0])
 
 class parcellotron(metaclass=abc.ABCMeta):
     """ Abstract class of an generic object which will contain informations
     used to parcellate an image.
     """
     @abc.abstractmethod
-    def __init__(self, subj_path):
+    def __init__(self, subj_path, modality):
+        self.modality = modality
         self.subj_folder = subj_path
-        self.subj_name = name
-        self.dir = dir_path
+        self.subj_name = os.path.basename(subj_name)
+        self.root_dir = os.path.dirname(subj_path)
+        self.input_dir = os.path.join(subj_path, modality)
 
     @abc.abstractmethod
     def read_inputs_into_2D(self):
@@ -30,10 +37,11 @@ class tracto_4D(parcellotron):
     Parameters
     ----------
     subj_path : str
-    The
+    The path to the folder containing the different modality folders which
+    contain the inputs.
     """
-    def __init__(self, name):
-        super().__init__(subj_path)
+    def __init__(self, subj_path):
+        super().__init__(subj_path, self.__class__.__name__)
         print(self.subj_name)
 
     def read_inputs_into_2D(self, subj_path, hemi):
