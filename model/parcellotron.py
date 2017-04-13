@@ -26,10 +26,14 @@ class parcellotron(metaclass=abc.ABCMeta):
         analysis)
     input_dir : str
         Directory containing the inputs of the subject for this modality
+    in_dict : dict
+        A dictionnarie storing the key string to find in input files and their
+        corresponding input files.
+        This attribut have to be filled by self.verify_input_folder()
     res_dir : str
         Folder which will contain the different results of the software, for
         this modality. The folder is created when the object is instanciate if
-        it does not exist.
+        it does not exist
     """
     @abc.abstractmethod
     def __init__(self, subj_path, modality):
@@ -39,6 +43,7 @@ class parcellotron(metaclass=abc.ABCMeta):
         self.root_dir = os.path.dirname(subj_path)
         self.input_dir = os.path.join(subj_path, modality)
         self.res_dir = os.path.join(self.input_dir, software_name + "_results")
+        self.in_dict = {}
         if not os.path.exists(self.res_dir):
             os.mkdir(self.res_dir)
         assert self.verify_input_folder(self.input_dir), self.inputs_needed()
@@ -53,6 +58,9 @@ class parcellotron(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def verify_input_folder(self, path):
+        """ This function aims to fill self.in_dict and verify that all the
+        input files need are in self.input_folder
+        """
         pass
 
     @abc.abstractmethod
@@ -93,6 +101,33 @@ class tracto_4D(parcellotron):
     def __init__(self, subj_path):
         super().__init__(subj_path, self.__class__.__name__)
 
+    def verify_input_folder(self, in_path):
+        boo = True
+        self.in_dict = {'cmaps4D':'', 'seedROIs':'', 'targetRibbon':''}
+        for k in self.in_dict.keys():
+            tmp_boo = ut.find_in_filename(in_path, k)
+            if not tmp_boo:
+                print('I did not find the ' + k + ' file.')
+            boo = boo and tmp_boo
+        return boo
+
+    def inputs_needed(self):
+        """
+        Returns
+        -------
+        message : str
+            A string describing the inputs you need for this modality
+        """
+        message = textwrap.dedent("""\
+            Inputs needed for this modality :
+            1) subj_4Dcmaps.nii[.gz] a 4D image with a connectivity map
+                for each time point
+            2) subj_ribbon.nii[.gz] the 3D binary mask of the brain ribbon
+            3) subj_ROIs.nii[.gz] 3D file with values indexing
+                Regions of Interest (ROIs).
+            """)
+        return message
+
     def read_inputs_into_2D(self, subj_path):
         """ Read the inputs and tranform the 4D image into a 2D connectivity
         matrix.
@@ -116,31 +151,9 @@ class tracto_4D(parcellotron):
     def map_ROIs(self):
         print("ok")
 
-    def verify_input_folder(self, in_path):
-        boo = False
-
-        return boo
-
-    def inputs_needed(self):
-        """
-        Returns
-        -------
-        message : str
-            A string describing the inputs you need for this modality
-        """
-        message = textwrap.dedent("""\
-            Inputs needed for this modality :
-            1) subj_4Dcmaps.nii[.gz] a 4D image with a connectivity map
-                for each time point
-            2) subj_ribbon.nii[.gz] the 3D binary mask of the brain ribbon
-            3) subj_ROIs.nii[.gz] 3D file with values indexing
-                Regions of Interest (ROIs).
-            """)
-        return message
-
 # %%
-test = tracto_4D("/data/BCBLab/test_COBRA/S1").inputs_needed()
-test.map_ROIs()
+test1 = tracto_4D("/data/BCBLab/test_COBRA/S1")
+
 # %%
 import os
 st = os.path.join("blabla", "bliblibli")

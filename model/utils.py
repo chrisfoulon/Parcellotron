@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from os.path import splitext, basename
+import glob
 
 def split_ext(path):
     """ Split the file extension from the path even in case of double extension.
@@ -27,12 +28,16 @@ def find_in_filename(path, string):
         the string you want to find in path
     Returns
     -------
-    is_in : bool
-        True if the filename contains string
-        False if not
+    file_path : str
+        the path to the file if ONE filename contains string
+        empty str if not
+        Throw an error if several files contain string
     """
-    base = basename(path)
-    filename = split_ext(base)[0]
-    splitted = filename.split('_')
-    is_in = string in splitted
-    return is_in
+    # join is here to handle folder paths with or without '/' at the end
+    arr = glob.glob(os.path.join(p, "") + '*' + string + '*')
+    if len(arr) == 0:
+        return ""
+    elif len(arr) == 1:
+        return arr[0]
+    else:
+        raise Exception("I found several files corresponding to this pattern")
