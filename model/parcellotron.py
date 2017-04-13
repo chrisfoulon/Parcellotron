@@ -5,6 +5,7 @@ import nibabel as nib
 import numpy as np
 import utils as ut
 import os
+import glob
 import textwrap
 
 software_name = "COBRA"
@@ -90,8 +91,8 @@ class tracto_4D(parcellotron):
     def map_ROIs(self):
         print("ok")
 
-    def verify_input_folder(self, path, hemi='ALL'):
-        self.cmaps
+    def verify_input_folder(self, in_path, hemi='ALL'):
+        boo = False
 
         if hemi == 'ALL':
 
@@ -136,3 +137,8 @@ func("1")
 def returns_str():
     return "une string"
 assert 2 == 1, returns_str()
+import re
+st1 = "subj_LH_cmaps4D.nii.gz"
+st2 = "subj_cmaps4D_LH.nii.gz"
+
+re.search(r"[(_LH)(_cmaps4D)]", st1)
