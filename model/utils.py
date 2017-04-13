@@ -38,5 +38,5 @@ def find_in_filename(path, str_arr):
     splitted = filename.split('_')
     is_in = True
     for s in str_arr:
-        is_in = s in splitted
+        is_in = is_in and (s in splitted)
     return is_in

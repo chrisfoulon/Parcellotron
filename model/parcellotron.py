@@ -140,5 +140,6 @@ assert 2 == 1, returns_str()
 import re
 st1 = "subj_LH_cmaps4D.nii.gz"
 st2 = "subj_cmaps4D_LH.nii.gz"
-
-re.search(r"[(_LH)(_cmaps4D)]", st1)
+st3 = "subj_cmaps4D_RH.nii.gz"
+str_arr = ["LH", 'cmaps4D']
+ut.find_in_filename(st3, str_arr)
