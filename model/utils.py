@@ -1,7 +1,24 @@
 # -*- coding: utf-8 -*-
 
-from os.path import splitext, basename
+import os
 import glob
+
+
+def parent_dir(path):
+    """ Return the path to the parent directory of the given path, even if the
+    path designates a folder (with or without "\\" at the end)
+    Parameters
+    ----------
+    path : str
+        The path to the file/folder you want to know the parent folder
+
+    Returns
+    -------
+    parent : str
+        the path to the parent folder
+    """
+    parent = os.path.dirname(os.path.dirname(os.path.join(path, "")))
+    return parent
 
 def split_ext(path):
     """ Split the file extension from the path even in case of double extension.
@@ -34,7 +51,7 @@ def find_in_filename(path, string):
         Throw an error if several files contain string
     """
     # join is here to handle folder paths with or without '/' at the end
-    arr = glob.glob(os.path.join(p, "") + '*' + string + '*')
+    arr = glob.glob(os.path.join(path, "") + '*' + string + '*')
     if len(arr) == 0:
         return ""
     elif len(arr) == 1:

@@ -6,6 +6,7 @@ import numpy as np
 import utils as ut
 import os
 import glob
+import shutil
 import textwrap
 
 software_name = "COBRA"
@@ -40,12 +41,12 @@ class parcellotron(metaclass=abc.ABCMeta):
         self.modality = modality
         self.subj_folder = subj_path
         self.subj_name = os.path.basename(subj_path)
-        self.root_dir = os.path.dirname(subj_path)
+        self.root_dir = os.path.dirname(subj_path) #Check here
         self.input_dir = os.path.join(subj_path, modality)
         self.res_dir = os.path.join(self.input_dir, software_name + "_results")
-        self.in_dict = {}
         if not os.path.exists(self.res_dir):
             os.mkdir(self.res_dir)
+        self.in_dict = {}
         assert self.verify_input_folder(self.input_dir), self.inputs_needed()
 
     @abc.abstractmethod
@@ -69,6 +70,11 @@ class parcellotron(metaclass=abc.ABCMeta):
         name you need to indentify those files.
         """
         pass
+
+    def reset_outputs(self):
+        """This function will remove the content of self.res_dir
+        """
+        shutil.rmtree(self.res_dir)
 
 
 class tracto_4D(parcellotron):
@@ -105,10 +111,11 @@ class tracto_4D(parcellotron):
         boo = True
         self.in_dict = {'cmaps4D':'', 'seedROIs':'', 'targetRibbon':''}
         for k in self.in_dict.keys():
-            tmp_boo = ut.find_in_filename(in_path, k)
-            if not tmp_boo:
+            res = ut.find_in_filename(in_path, k)
+            if res == "":
                 print('I did not find the ' + k + ' file.')
-            boo = boo and tmp_boo
+            self.in_dict[k] = res
+            boo = boo and (res != "")
         return boo
 
     def inputs_needed(self):
@@ -128,14 +135,9 @@ class tracto_4D(parcellotron):
             """)
         return message
 
-    def read_inputs_into_2D(self, subj_path):
+    def read_inputs_into_2D(self):
         """ Read the inputs and tranform the 4D image into a 2D connectivity
         matrix.
-        Parameters
-        ----------
-        subj_path : str
-            The path to the subject folder, containing the 4D image.
-            (The filename must contain "4Dcmaps" separated by underscores)
         Returns
         -------
         2D_con_mat : 2D np.array
@@ -146,18 +148,58 @@ class tracto_4D(parcellotron):
         2D_con_mat is also stored in "temprorary_files" in the results folder
         with the name : subj_2D_connectivity_matrix.npy
         """
-        print("Olol")
+        # Name of the 2D connectivity matrix
+        self.cmap2D = os.path.join(self.res_dir, self.subj_name + "_cmap2D.npy")
+        # Read the brain ribbon mask, which will become the number of columns
+        # of the 2D connectivity matrix
+        ribbon_data = nib.load(self.in_dict['targetRibbon']).get_data()
+
+        # Create indices for voxels on the brain ribbon
+        ind_ribbon = np.where(ribbon_data)
+        nvox = np.array(ind_ribbon).shape[1]
+
+        # Now we load the 4D file with the connectivity profiles for each ROI
+        co = nib.load(self.in_dict['cmaps4D']).get_data()
+
+        # Record the number of ROIs
+        nROIs = co.shape[3]
+
+        # Prepare a zero matrix to store the 2D connectivity matrix
+        co_mat = np.zeros((nROIs,nvox))
+
+        # Fill the connectivity matrix
+        for i in np.arange(nROIs):
+            tmp = co[:,:,:,i]
+            co_mat[i,:] = tmp[ind_ribbon]
+
+        # Save the connectivity_matrix in an npy file
+        np.save(self.cmap2D, co_mat)
+
+        return co_mat
+
 
     def map_ROIs(self):
-        print("ok")
+        ROIs = nib.load(self.in_dict['seedROIs']).get_data()
+        # Create an index to the xyz coordinates of the voxels in each ROIs
+        ind_xyz_ROIs = np.where(ROIs)
+        # Create an index of the ROI associated with each row of the
+        # (subsequently) created 2D_connectivity_matrix
+        ind_2Drows_to_ROIs_label = ROIs[ind_xyz_ROIs]
+
+        return ind_xyz_ROIs, ind_2Drows_to_ROIs_label
+
 
 # %%
 test1 = tracto_4D("/data/BCBLab/test_COBRA/S1")
+mat = test1.read_inputs_into_2D()
 
+mat.shape
+print(test1.read_inputs_into_2D.__doc__)
+ind, rows = test1.map_ROIs
 # %%
-import os
 st = os.path.join("blabla", "bliblibli")
-
+print("\n" + os.path.dirname(
+    os.path.dirname(os.path.join("/data/BCBLab/test_COBRA/S1/", ""))))
 # os.rmdir("blibli")
 print(st)
 tt = """test
