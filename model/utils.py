@@ -58,3 +58,40 @@ def find_in_filename(path, string):
         return arr[0]
     else:
         raise Exception("I found several files corresponding to this pattern")
+
+def save_dict(d, path):
+    """ Save a dictionary in a file
+    Parameters
+    ----------
+    d : dict
+        A dictionary with data
+    path : str
+        The path to the file you want to create
+        Note that the folder which will contain the file have to exist
+    """
+    with open(path, "w") as input_file:
+        for k, v in d.items():
+            line = '{} {}'.format(k, v)
+            print(line, file=input_file)
+
+def read_dict_from_file(path, sep=None):
+    """ Read a dictionnary from a file. The file have to composed of pairs
+    key[separator]value
+    Parameters
+    ----------
+    path : str
+        path to the file to be read
+    sep : str[default None]
+        the separator between key and value. The default None value will
+        use spaces
+    Returns
+    -------
+    d : dict
+        The dictionnary contained in the file
+    """
+    d={}
+    with open(path) as f:
+        for line in f:
+            (key, val) = line.split(sep)
+            d[key] = val
+    return d

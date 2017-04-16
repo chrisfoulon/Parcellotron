@@ -9,9 +9,7 @@ import glob
 import shutil
 import textwrap
 
-software_name = "COBRA"
-
-class parcellotron(metaclass=abc.ABCMeta):
+class Parcellotron(metaclass=abc.ABCMeta):
     """ Abstract class of an generic object which will contain informations
     used to parcellate an image.
     Attributes
@@ -36,27 +34,26 @@ class parcellotron(metaclass=abc.ABCMeta):
         this modality. The folder is created when the object is instanciate if
         it does not exist
     """
+
+    software_name = "COBRA"
+
     @abc.abstractmethod
     def __init__(self, subj_path, modality):
         self.modality = modality
         self.subj_folder = subj_path
         self.subj_name = os.path.basename(subj_path)
-        self.root_dir = os.path.dirname(subj_path) #Check here
+        self.root_dir = ut.parent_dir(subj_path)
         self.input_dir = os.path.join(subj_path, modality)
-        self.res_dir = os.path.join(self.input_dir, software_name + "_results")
+        self.res_dir = os.path.join(self.input_dir,
+                                    Parcellotron.software_name + "_results")
         if not os.path.exists(self.res_dir):
             os.mkdir(self.res_dir)
         self.in_dict = {}
         assert self.verify_input_folder(self.input_dir), self.inputs_needed()
+        self.save_param = self.settings = QSettings('COBRA', 'BCBLab')
+        self.save_param.setPath
 
-    @abc.abstractmethod
-    def read_inputs_into_2D(self):
-        pass
-
-    @abc.abstractmethod
-    def map_ROIs(self):
-        pass
-
+    # Init functions
     @abc.abstractmethod
     def verify_input_folder(self, path):
         """ This function aims to fill self.in_dict and verify that all the
@@ -72,12 +69,28 @@ class parcellotron(metaclass=abc.ABCMeta):
         pass
 
     def reset_outputs(self):
-        """This function will remove the content of self.res_dir
+        """ This function will remove the content of self.res_dir
         """
         shutil.rmtree(self.res_dir)
 
+    @abc.abstractmethod
+    def param_info_substring(self):
+        """ Create a substring to save informations in the result and temportary
+        filenames to differentiate results if the parameters change.
+        """
+        pass
 
-class tracto_4D(parcellotron):
+    # Calculation functions
+    @abc.abstractmethod
+    def read_inputs_into_2D(self):
+        pass
+
+    @abc.abstractmethod
+    def map_ROIs(self):
+        pass
+
+
+class tracto_4D(Parcellotron):
     """ Object containing the informations used to parcellate the tractography
     of 1 subject from a 4D image.
     Parameters
