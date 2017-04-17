@@ -53,15 +53,16 @@ class Parcellotron(metaclass=abc.ABCMeta):
         assert self.verify_input_folder(self.input_dir), self.inputs_needed()
 
         # Name of the 2D connectivity matrix file
-        self.cmap2D = os.path.join(self.res_dir, self.subj_name + "_cmap2D.npy")
+        self.cmap2D_path =\
+            os.path.join(self.res_dir, self.subj_name + "_cmap2D.npy")
 
-        if os.path.exists(self.cmap2D):
-            self.co_mat_2D = np.load(self.cmap2D)
+        if os.path.exists(self.cmap2D_path):
+            self.co_mat_2D = np.load(self.cmap2D_path)
         else:
             # Create the 2D connectivity matrix if it does not exist
             self.co_mat_2D = self.read_inputs_into_2D()
             # Save the connectivity_matrix in an npy file
-            np.save(self.cmap2D, self.co_mat_2D)
+            np.save(self.cmap2D_path, self.co_mat_2D)
         # Create a map of correspondence among ROIs and voxels, where the ROI
         # order also reflects that of the (subsequent) rows of the connectivity
         # matrix
@@ -75,16 +76,12 @@ class Parcellotron(metaclass=abc.ABCMeta):
         """
         pass
 
-    @abc.abstractmethod
-    def verify_input_folder(self, path):
-
-        pass
-
-
     def verify_input_folder(self, in_path):
         """ This function aims to fill self.in_dict and verify that all the
         input files need are in self.input_folder
         """
+        assert hasattr(self, 'in_dict'), "self.in_dict wasn't initialized"
+        assert self.in_dict != {}, "self.in_dict is empty !"
         boo = True
         for k in self.in_dict.keys():
             res = ut.find_in_filename(in_path, k)
@@ -114,7 +111,6 @@ class Parcellotron(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def map_ROIs(self):
         pass
-
 
 class tracto_4D(Parcellotron):
     """ Object containing the informations used to parcellate the tractography
@@ -224,7 +220,7 @@ class tracto_4D(Parcellotron):
 
 # %%
 test1 = tracto_4D("/data/BCBLab/test_COBRA/S1")
-mat = test1.read_inputs_into_2D()
+mat = test1.co_mat_2D
 
 mat.shape
 print(test1.read_inputs_into_2D.__doc__)
