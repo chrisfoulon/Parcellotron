@@ -2,13 +2,13 @@
 
 from sklearn.cluster import KMeans
 
-def parcellate_KMeans(sim_mat, k):
+def parcellate_KMeans(sim_mat, nb_clu):
     """ Parellate a 2D similarity matrix with the KMeans algorithm
     Parameters
     ----------
     sim_mat : 2D np.array
         square similarity_matrix, e.g. correlation matrix
-    k = int
+    nb_clu = int
         desired number of clusters
     Returns
     -------
@@ -17,6 +17,6 @@ def parcellate_KMeans(sim_mat, k):
         value associated to a certain cluster
     """
 
-    labels = KMeans(n_clusters=k).fit_predict(sim_mat)
+    labels = KMeans(n_clusters=nb_clu).fit_predict(sim_mat)
 
     return labels
