@@ -48,18 +48,51 @@ class Parcellotron(metaclass=abc.ABCMeta):
                                     Parcellotron.software_name + "_results")
         if not os.path.exists(self.res_dir):
             os.mkdir(self.res_dir)
-        self.in_dict = {}
+
+        self.in_dict = self.init_input_dict()
         assert self.verify_input_folder(self.input_dir), self.inputs_needed()
-        self.save_param = self.settings = QSettings('COBRA', 'BCBLab')
-        self.save_param.setPath
+
+        # Name of the 2D connectivity matrix file
+        self.cmap2D = os.path.join(self.res_dir, self.subj_name + "_cmap2D.npy")
+
+        if os.path.exists(self.cmap2D):
+            self.co_mat_2D = np.load(self.cmap2D)
+        else:
+            # Create the 2D connectivity matrix if it does not exist
+            self.co_mat_2D = self.read_inputs_into_2D()
+            # Save the connectivity_matrix in an npy file
+            np.save(self.cmap2D, self.co_mat_2D)
+        # Create a map of correspondence among ROIs and voxels, where the ROI
+        # order also reflects that of the (subsequent) rows of the connectivity
+        # matrix
+        (self.ind_xyz_ROIs, self.ROIs_label) = self.map_ROIs()
 
     # Init functions
     @abc.abstractmethod
+    def init_input_dict(self):
+        """ Fill input files substring to check and store input files path
+        The function have to return the dictionnary
+        """
+        pass
+
+    @abc.abstractmethod
     def verify_input_folder(self, path):
+
+        pass
+
+
+    def verify_input_folder(self, in_path):
         """ This function aims to fill self.in_dict and verify that all the
         input files need are in self.input_folder
         """
-        pass
+        boo = True
+        for k in self.in_dict.keys():
+            res = ut.find_in_filename(in_path, k)
+            if res == "":
+                print('I did not find the ' + k + ' file.')
+            self.in_dict[k] = res
+            boo = boo and (res != "")
+        return boo
 
     @abc.abstractmethod
     def inputs_needed(self):
@@ -72,13 +105,6 @@ class Parcellotron(metaclass=abc.ABCMeta):
         """ This function will remove the content of self.res_dir
         """
         shutil.rmtree(self.res_dir)
-
-    @abc.abstractmethod
-    def param_info_substring(self):
-        """ Create a substring to save informations in the result and temportary
-        filenames to differentiate results if the parameters change.
-        """
-        pass
 
     # Calculation functions
     @abc.abstractmethod
@@ -120,16 +146,15 @@ class tracto_4D(Parcellotron):
     def __init__(self, subj_path):
         super().__init__(subj_path, self.__class__.__name__)
 
-    def verify_input_folder(self, in_path):
-        boo = True
-        self.in_dict = {'cmaps4D':'', 'seedROIs':'', 'targetRibbon':''}
-        for k in self.in_dict.keys():
-            res = ut.find_in_filename(in_path, k)
-            if res == "":
-                print('I did not find the ' + k + ' file.')
-            self.in_dict[k] = res
-            boo = boo and (res != "")
-        return boo
+    def init_input_dict(self):
+        """ Fill input files substring to check and store input files path
+        Returns
+        -------
+        d : dict
+            the dictionnary containing the substring to find the input files
+        """
+        d = {'cmaps4D':'', 'seedROIs':'', 'targetRibbon':''}
+        return d
 
     def inputs_needed(self):
         """
@@ -153,16 +178,14 @@ class tracto_4D(Parcellotron):
         matrix.
         Returns
         -------
-        2D_con_mat : 2D np.array
+        co_mat_2D : 2D np.array
             2D matrix where rows are seed ROIs and columns the target's voxels
 
         Notes
         -----
-        2D_con_mat is also stored in "temprorary_files" in the results folder
+        co_mat_2D is also stored in "temprorary_files" in the results folder
         with the name : subj_2D_connectivity_matrix.npy
         """
-        # Name of the 2D connectivity matrix
-        self.cmap2D = os.path.join(self.res_dir, self.subj_name + "_cmap2D.npy")
         # Read the brain ribbon mask, which will become the number of columns
         # of the 2D connectivity matrix
         ribbon_data = nib.load(self.in_dict['targetRibbon']).get_data()
@@ -178,17 +201,14 @@ class tracto_4D(Parcellotron):
         nROIs = co.shape[3]
 
         # Prepare a zero matrix to store the 2D connectivity matrix
-        co_mat = np.zeros((nROIs,nvox))
+        co_mat_2D = np.zeros((nROIs,nvox))
 
         # Fill the connectivity matrix
         for i in np.arange(nROIs):
             tmp = co[:,:,:,i]
-            co_mat[i,:] = tmp[ind_ribbon]
+            co_mat_2D[i,:] = tmp[ind_ribbon]
 
-        # Save the connectivity_matrix in an npy file
-        np.save(self.cmap2D, co_mat)
-
-        return co_mat
+        return co_mat_2D
 
 
     def map_ROIs(self):
