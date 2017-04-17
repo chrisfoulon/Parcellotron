@@ -52,7 +52,6 @@ def matrix_zscore(matrix):
     ind_zerostd = np.where(np.sum(matrix, axis=0) == 0)
 
     if np.squeeze(ind_zerostd).any():
-
         numba_voxels_zerostd = np.array(ind_zerostd).shape[1]
         print("I found " + str(numba_voxels_zerostd) + " voxels with zero std.")
         print("I will replace them with normally distributed random numbers")
