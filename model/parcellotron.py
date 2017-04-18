@@ -34,7 +34,9 @@ class Parcellotron(metaclass=abc.ABCMeta):
         this modality. The folder is created when the object is instanciate if
         it does not exist
     """
-
+# add an option to say it is group analysis
+# If it is activated I search the already calculated ROIS, if I don't find it
+# I create it with the files inside the root folder (or root/general_inputs folder)
     software_name = "COBRA"
 
     @abc.abstractmethod
@@ -66,6 +68,7 @@ class Parcellotron(metaclass=abc.ABCMeta):
         # Create a map of correspondence among ROIs and voxels, where the ROI
         # order also reflects that of the (subsequent) rows of the connectivity
         # matrix
+        # if (not MNISPACE_OPTION) and (not os.path.exists(MNIROIS_FILES)):
         (self.ind_xyz_ROIs, self.ROIs_label) = self.map_ROIs()
 
     # Init functions
@@ -208,14 +211,64 @@ class tracto_4D(Parcellotron):
 
 
     def map_ROIs(self):
-        ROIs = nib.load(self.in_dict['seedROIs']).get_data()
-        # Create an index to the xyz coordinates of the voxels in each ROIs
-        ind_xyz_ROIs = np.where(ROIs)
-        # Create an index of the ROI associated with each row of the
-        # (subsequently) created 2D_connectivity_matrix
-        ind_2Drows_to_ROIs_label = ROIs[ind_xyz_ROIs]
+        return ut.read_ROIs_from_nifti(self.in_dict['seedROIs'])
 
-        return ind_xyz_ROIs, ind_2Drows_to_ROIs_label
+class tracto_mat(Parcellotron):
+    """ Description
+    """
+    def __init__(self, subj_path):
+        super().__init__(subj_path, self.__class__.__name__)
+        self.seedROIs_file = os.path.join(self.input_dir, 'seedROIs.nii.gz')
+
+    def init_input_dict(self):
+        """ Fill input files substring to check and store input files path
+        Returns
+        -------
+        d : dict
+            the dictionnary containing the substring to find the input files
+        """
+        # self.in_names = {'coord':'omat*/coord_for_fdt_matrix'}
+        d = {'omat*/coord_for_fdt_matrix':'',
+             'omat*/fdt_matrix':'', 'omat*/fdt_matrix':'', 'omat*/fdt_paths':'',
+             'seedMask':'', 'seedTarget':''}
+        return d
+        # self.in_dict[self.in_names['coord']]
+
+    def inputs_needed(self):
+        """
+        Returns
+        -------
+        message : str
+            A string describing the inputs you need for this modality
+        """
+        message = textwrap.dedent("""\
+            Inputs needed for this modality :
+            1) subj_4Dcmaps.nii[.gz] a 4D image with a connectivity map
+                for each time point
+            2) subj_ribbon.nii[.gz] the 3D binary mask of the brain ribbon
+            3) subj_ROIs.nii[.gz] 3D file with values indexing
+                Regions of Interest (ROIs).
+            """)
+        return message
+
+    def read_inputs_into_2D(self):
+        """ Read the inputs and tranform the 4D image into a 2D connectivity
+        matrix.
+        Returns
+        -------
+        co_mat_2D : 2D np.array
+            2D matrix where rows are seed ROIs and columns the target's voxels
+
+        Notes
+        -----
+        co_mat_2D is also stored in "temprorary_files" in the results folder
+        with the name : subj_2D_connectivity_matrix.npy
+        """
+
+    def map_ROIs(self):
+        if os.path.exists(self.seedROIs_file):
+            return ut.read_ROIs_from_nifti(self.seedROIs_file)
+        # CREATE seedROIs
 
 
 # %%

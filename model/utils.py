@@ -95,3 +95,16 @@ def read_dict_from_file(path, sep=None):
             (key, val) = line.split(sep)
             d[key] = val
     return d
+
+def read_ROIs_from_nifti(path):
+    ROIs = nib.load(path).get_data()
+    # Create an index to the xyz coordinates of the voxels in each ROIs
+    ind_xyz_ROIs = np.where(ROIs)
+    # Create an index of the ROI associated with each row of the
+    # (subsequently) created 2D_connectivity_matrix
+    ind_2Drows_to_ROIs_label = ROIs[ind_xyz_ROIs]
+
+    return ind_xyz_ROIs, ind_2Drows_to_ROIs_label
+
+# tt = find_in_filename("/data", 'BCB*/folder*/pattern')
+# print(tt)
