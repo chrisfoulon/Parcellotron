@@ -6,6 +6,11 @@ import matrix_tranformations as mt
 import similarity_matrices as sm
 import parcellation_methods as pm
 
+import numpy as np
+from sklearn.cluster import KMeans
+import matplotlib.pyplot as plt
+import time
+
 parser = argparse.ArgumentParser(description="Calculate the parcellation of\
                                  brain images")
 
@@ -18,9 +23,10 @@ parcellation_method_arr = ['KMeans', 'PCA']
 parser.add_argument("subj_path", type=str, help="the subject folder path")
 parser.add_argument("modality", type=str, help="the input modality",
                     choices=modality_arr)
-parser.add_argument("similarity_matrix", type=str, help="the input modality",
-                    choices=modality_arr, default='correlation')
-parser.add_argument("matrix_transformation", type=str,
+parser.add_argument("similarity_matrix", type=str,
+                    help="type of similarity_matrix you want",
+                    choices=sim_mat_arr, default='correlation')
+parser.add_argument("-t", "--transform", type=str,
                     help="the transformation(s) to apply to the similarity \
                     matrix", choices=mat_transform_arr, default='log2_zscore')
 parser.add_argument("parcellation_method", type=str,
@@ -35,9 +41,11 @@ parser.add_argument("parcellation_method", type=str,
 args = parser.parse_args()
 
 def parcellate(path, mod, transformation, sim_mat, method):
+
+    t0 = time.time()
     # modality choice
-    if args.modality == 'tracto_4D':
-        subj_obj = pa.tracto_4D(mod)
+    if mod == 'tracto_4D':
+        subj_obj = pa.tracto_4D(path)
         mat_2D = subj_obj.co_mat_2D
     else:
         raise Exception("bad modality")
@@ -62,24 +70,21 @@ def parcellate(path, mod, transformation, sim_mat, method):
     else:
         raise Exception("Not yet implemented")
 
+    t1 = time.time()
+    print("KMeans performed in %.3f s" % (t1 - t0))
+
+    IDX_CLU = np.argsort(labels)
+
+    similarity_matrix_reordered = sim[IDX_CLU,:][:,IDX_CLU]
+
+    plt.imshow(similarity_matrix_reordered, interpolation='none')
+    plt.show()
+
     return labels
 
-import numpy as np
-from sklearn.cluster import KMeans
-import matplotlib.pyplot as plt
-import time
-
-t0 = time.time()
 subj_labels = parcellate(args.subj_path, args.modality,
-                     args.matrix_transformation,
+                     args.transform,
                      args.similarity_matrix, args.parcellation_method)
-t1 = time.time()
 
-print("KMeans performed in %.3f s" % (t1 - t0))
-
-IDX_CLU = np.argsort(labels)
-
-similarity_matrix_reordered = similarity_matrix[IDX_CLU,:][:,IDX_CLU]
-
-plt.imshow(similarity_matrix_reordered, interpolation='none')
-plt.show()
+""" Notes group level analysis
+"""

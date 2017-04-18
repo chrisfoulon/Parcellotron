@@ -2,6 +2,8 @@
 
 import os
 import glob
+import nibabel as nib
+import numpy as np
 
 
 def parent_dir(path):

@@ -41,6 +41,7 @@ class Parcellotron(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def __init__(self, subj_path, modality):
+        print(subj_path)
         self.modality = modality
         self.subj_folder = subj_path
         self.subj_name = os.path.basename(subj_path)
@@ -272,25 +273,25 @@ class tracto_mat(Parcellotron):
 
 
 # %%
-test1 = tracto_4D("/data/BCBLab/test_COBRA/S1")
-mat = test1.co_mat_2D
-
-mat.shape
-print(test1.read_inputs_into_2D.__doc__)
-ind, rows = test1.map_ROIs
-# %%
-st = os.path.join("blabla", "bliblibli")
-print("\n" + os.path.dirname(
-    os.path.dirname(os.path.join("/data/BCBLab/test_COBRA/S1/", ""))))
-# os.rmdir("blibli")
-print(st)
-tt = """test
-test bla"""
-type(st)
-def func(str):
-    assert len(str) > 2, "Error lol"
-    print(str)
-func("1")
-def returns_str():
-    return "une string"
-assert 2 == 1, returns_str()
+# test1 = tracto_4D("/data/BCBLab/test_COBRA/S1")
+# mat = test1.co_mat_2D
+#
+# mat.shape
+# print(test1.read_inputs_into_2D.__doc__)
+# ind, rows = test1.map_ROIs
+# # %%
+# st = os.path.join("blabla", "bliblibli")
+# print("\n" + os.path.dirname(
+#     os.path.dirname(os.path.join("/data/BCBLab/test_COBRA/S1/", ""))))
+# # os.rmdir("blibli")
+# print(st)
+# tt = """test
+# test bla"""
+# type(st)
+# def func(str):
+#     assert len(str) > 2, "Error lol"
+#     print(str)
+# func("1")
+# def returns_str():
+#     return "une string"
+# assert 2 == 1, returns_str()
