@@ -67,6 +67,8 @@ def parcellate(path, mod, transformation, sim_mat, method):
     # parcellation
     if method == 'KMeans':
         labels = pm.parcellate_KMeans(sim, 10)
+    elif method == 'PCA':
+        labels = pm.parcellate_PCA(sim)
     else:
         raise Exception("Not yet implemented")
 

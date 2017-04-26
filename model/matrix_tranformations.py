@@ -76,7 +76,7 @@ def rotate_components(phi, gamma = 1.0, q = 50, tol = 1e-6):
     phi: 2D np.array
 
     gamma: float
-        1 for varimax (default), 0 for quartimax
+        1.0 for varimax (default), 0.0 for quartimax
     q: int
         number of iterations (default=50)
     tol: float

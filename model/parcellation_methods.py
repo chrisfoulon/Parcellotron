@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 
 from sklearn.cluster import KMeans
+from sklearn import decomposition
 import numpy as np
+import matrix_tranformations as mt
 
 def parcellate_KMeans(sim_mat, nb_clu):
     """ Parellate a 2D similarity matrix with the KMeans algorithm
@@ -51,7 +53,7 @@ def parcellate_PCA(similarity_matrix):
     pc = pc[:,:]
 
     # Rotate the "v", i.e. the principal components
-    pc_rot = rotate_components(pc, gamma = 0.0)
+    pc_rot = mt.rotate_components(pc, gamma = 0.0)
 
     # Go back to the original orientation. CAREFUL: in the numpy
     # implementation, "v" is already rotated! (hence the name "vt")
@@ -72,9 +74,9 @@ def parcellate_PCA(similarity_matrix):
 
     # Determine the number of components to consider, by
     # fitting a power curve to the first 50 'rotate' eigenvalues
-    npc = fit_power(eigvals_rot_sorted_descending)
+    npc = mt.fit_power(eigvals_rot_sorted_descending)
 
-    print("We found " + npc + " principal components")
+    print("We found " + str(npc) + " principal components")
 
     # Perform the second decomposition, with a given number of components
     pca = decomposition.PCA(n_components = npc)
@@ -87,7 +89,7 @@ def parcellate_PCA(similarity_matrix):
     # Perform rotation of the eigenvectors/loadings
     # We need a matrix of pc in columns for the rotation, so we
     # take the transpose of the pca.components_ matrix
-    pc_rot = rotatecomponents(pc.T, gamma = 0.0)
+    pc_rot = mt.rotate_components(pc.T, gamma = 0.0)
 
 
     # Sort the clusters of ROIs and count the number of ROIs per clusters
