@@ -87,4 +87,16 @@ subj_labels = parcellate(args.subj_path, args.modality,
                      args.similarity_matrix, args.parcellation_method)
 
 """ Notes group level analysis
+Consensus (matrix) method : we check in each pair of voxels in each subject if
+they are in the same cluster. For exemple 2 voxels are in the same cluster in
+subj1 and not in the second subj so their "similarity" is 0.5
+2012 ?
+We could do the parcellation of all patients, calculate the consensus matrix
+VIF (variance im????? factor)
+Instead of consensus we could combine similarity matrices
+
+idea ?? Could we create a probability map for each clusters with the chance
+to belong to the cluster in each voxel. I don't know which method use but we
+maybe could create those "images" of each cluster and we could label clusters
+with the biggest probability.
 """
