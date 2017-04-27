@@ -20,6 +20,10 @@ sim_mat_arr = ['distance', 'covariance', 'correlation']
 mat_transform_arr = ['log2', 'zscore', 'log2_zscore', 'none']
 parcellation_method_arr = ['KMeans', 'PCA']
 
+# I need subcommands
+# https://docs.python.org/3/library/argparse.html#module-argparse
+
+
 parser.add_argument("subj_path", type=str, help="the subject folder path")
 parser.add_argument("modality", type=str, help="the input modality",
                     choices=modality_arr)
@@ -29,9 +33,18 @@ parser.add_argument("similarity_matrix", type=str,
 parser.add_argument("-t", "--transform", type=str,
                     help="the transformation(s) to apply to the similarity \
                     matrix", choices=mat_transform_arr, default='log2_zscore')
-parser.add_argument("parcellation_method", type=str,
-                    help="the parcellation methods to use",
-                    choices=parcellation_method_arr)
+sub_parsers = parser.add_subparsers(help='Choose the parcellation method',
+                                    dest='parcellation_method')
+
+parser_PCA = sub_parsers.add_parser('PCA', help='Parcellate your data using \
+                                    the PCA algorithm')
+parser_KMeans = sub_parsers.add_parser('KMeans', help='Parcellate your data \
+                                       using the KMeans algorithm')
+parser_KMeans.add_argument('num_clu', help='Choose the number of cluster you \
+                           want to find with the KMeans', type=int)
+# parser.add_argument("parcellation_method", type=str,
+#                     help="the parcellation methods to use",
+#                     choices=parcellation_method_arr)
 
 # group = parser.add_mutually_exclusive_group()
 # group.add_argument("-v", "--verbose", action="store_true")
@@ -70,7 +83,7 @@ def parcellate(path, mod, transformation, sim_mat, method):
     elif method == 'PCA':
         labels = pm.parcellate_PCA(sim)
     else:
-        raise Exception("Not yet implemented")
+        raise Exception(method + " is not yet implemented")
 
     t1 = time.time()
     print("KMeans performed in %.3f s" % (t1 - t0))
