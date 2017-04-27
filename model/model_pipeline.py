@@ -38,8 +38,8 @@ sub_parsers = parser.add_subparsers(help='Choose the parcellation method',
 
 parser_PCA = sub_parsers.add_parser('PCA', help='Parcellate your data using \
                                     the PCA algorithm')
-parser_KMeans = sub_parsers.add_parser('KMeans', help='Parcellate your data \
-                                       using the KMeans algorithm')
+parser_KMeans = sub_parsers.add_parser('KMeans', help="Parcellate your data \
+                                       using the KMeans algorithm")
 parser_KMeans.add_argument('num_clu', help='Choose the number of cluster you \
                            want to find with the KMeans', type=int)
 # parser.add_argument("parcellation_method", type=str,
@@ -100,18 +100,3 @@ def parcellate(path, mod, transformation, sim_mat, method):
 subj_labels = parcellate(args.subj_path, args.modality,
                      args.transform,
                      args.similarity_matrix, args.parcellation_method)
-
-""" Notes group level analysis
-Consensus (matrix) method : we check in each pair of voxels in each subject if
-they are in the same cluster. For exemple 2 voxels are in the same cluster in
-subj1 and not in the second subj so their "similarity" is 0.5
-2012 ?
-We could do the parcellation of all patients, calculate the consensus matrix
-VIF (variance im????? factor)
-Instead of consensus we could combine similarity matrices
-
-idea ?? Could we create a probability map for each clusters with the chance
-to belong to the cluster in each voxel. I don't know which method use but we
-maybe could create those "images" of each cluster and we could label clusters
-with the biggest probability.
-"""
