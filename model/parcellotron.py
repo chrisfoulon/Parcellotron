@@ -10,37 +10,56 @@ import shutil
 import textwrap
 
 class Parcellotron(metaclass=abc.ABCMeta):
-    """ Abstract class of an generic object which will contain informations
+    """ @Inheritance Parcellotron:
+    Abstract class of an generic object which will contain informations
     used to parcellate an image.
     Attributes
     ----------
-    modality : {'tracto_4D', 'tracto_matrix', 'fmri_4D'}
+    modality: {'tracto_4D', 'tracto_matrix', 'fmri_4D'}
         Name of the modality
-    subj_folder : str
+    subj_folder: str
         Path to the subject folder
-    subj_name : str
+    subj_name: str
         Name of the subject
-    root_dir : str
+    input_dir: str
+        Directory containing the inputs of the subject for this modality
+    root_dir: str
         Parent directory of the subject folder (used especially for group level
         analysis)
-    input_dir : str
-        Directory containing the inputs of the subject for this modality
-    in_dict : dict
+    group_level: bool (default: False)
+        If True, the seed and target files will be searched and created in a
+        general folder in the root directory.
+        If False, all the files are searched and created in the subject folder
+    res_dir: str
+        Folder which will contain the different results of the software, for
+        this modality.  If it does not existThe folder is created when the
+        object is instanciated
+    in_dict: dict
         A dictionnarie storing the key string to find in input files and their
         corresponding input files.
         This attribut have to be filled by self.verify_input_folder()
-    res_dir : str
-        Folder which will contain the different results of the software, for
-        this modality. The folder is created when the object is instanciate if
-        it does not exist
+    seed_path: str
+        Path to the seedROIs nifti file which is an image with values indexing
+        Regions of Interest (ROIs)
+    target_path: str
+        Path to the nifti 3D image of the target mask
+    ind_xyz_ROIs : TO FILL
+        Index of the xyz coordinates of the voxels in each ROIs
+    ROIs_label : np.array
+        Create an index of the ROI associated with each row of the
+        (subsequently) created 2D_connectivity_matrix
+    cmap2D_path : str
+        Path to the python file where the connectivity matrix is or will be
+        stored. If the matrix already exists, we won't compute it again
+    co_mat_2D : np.array
+        The 2D connectivity matrix calculated from the data
     """
-# add an option to say it is group analysis
-# If it is activated I search the already calculated ROIS, if I don't find it
-# I create it with the files inside the root folder (or root/general_inputs folder)
+
     software_name = "COBRA"
 
     @abc.abstractmethod
     def __init__(self, subj_path, modality, group_level=False):
+        self.__doc__ = Parcellotron.__doc__ + self.__doc__
         self.modality = modality
         self.subj_folder = subj_path
         self.subj_name = os.path.basename(subj_path)
@@ -70,8 +89,10 @@ class Parcellotron(metaclass=abc.ABCMeta):
             self.seed_path = os.path.join(self.input_dir, "seedROIs.nii.gz")
             self.target_path = os.path.join(self.input_dir, "targetMask.nii.gz")
 
-        self.seedROIs = self.map_ROIs()
-
+        (self.ind_xyz_ROIs, self.ROIs_label) = self.map_ROIs()
+        print("""ADD A PREFIX TO THE SEED (MAYBE ALSO TARGET) TO DISANTANGLE
+              ANALYSES WITH DIFFERENT SEEDS AND IF THERE IS NO PREFIX
+              WE JUST DO LIKE BEFORE""")
         # Name of the 2D connectivity matrix file
         self.cmap2D_path =\
             os.path.join(self.res_dir, self.subj_name + "_cmap2D.npy")
@@ -86,7 +107,7 @@ class Parcellotron(metaclass=abc.ABCMeta):
         # Create a map of correspondence among ROIs and voxels, where the ROI
         # order also reflects that of the (subsequent) rows of the connectivity
         # matrix
-        # if (not MNISPACE_OPTION) and (not os.path.exists(MNIROIS_FILES)):
+        ###### if (not MNISPACE_OPTION) and (not os.path.exists(MNIROIS_FILES)):
         (self.ind_xyz_ROIs, self.ROIs_label) = self.map_ROIs()
 
     # Init functions
@@ -138,24 +159,24 @@ class tracto_4D(Parcellotron):
     of 1 subject from a 4D image.
     Parameters
     ----------
-    subj_path : str
+    subj_path: str
         The path to the folder containing the different modality folders which
         contain the inputs.
     Attributes
     ----------
     INHERITED
-    modality : {'tracto_4D', 'tracto_matrix', 'fmri_4D'}
+    modality: {'tracto_4D', 'tracto_matrix', 'fmri_4D'}
         Name of the modality
-    subj_folder : str
+    subj_folder: str
         Path to the subject folder
-    subj_name : str
+    subj_name: str
         Name of the subject
-    root_dir : str
+    root_dir: str
         Parent directory of the subject folder (used especially for group level
         analysis)
-    input_dir : str
+    input_dir: str
         Directory containing the inputs of the subject for this modality
-    res_dir : str
+    res_dir: str
         Folder which will contain the different results of the software, for
         this modality. The folder is created when the object is instanciate if
         it does not exist.
@@ -167,7 +188,7 @@ class tracto_4D(Parcellotron):
         """ Fill input files substring to check and store input files path
         Returns
         -------
-        d : dict
+        d: dict
             the dictionnary containing the substring to find the input files
         """
         d = {'cmaps4D':''}
@@ -177,11 +198,11 @@ class tracto_4D(Parcellotron):
         """
         Returns
         -------
-        message : str
+        message: str
             A string describing the inputs you need for this modality
         """
         message = textwrap.dedent("""\
-            Inputs needed for this modality :
+            Inputs needed for this modality:
             1) subj_4Dcmaps.nii[.gz] a 4D image with a connectivity map
                 for each time point
             2) subj_targetMask.nii[.gz] the 3D binary mask of the brain ribbon
@@ -195,13 +216,13 @@ class tracto_4D(Parcellotron):
         matrix.
         Returns
         -------
-        co_mat_2D : 2D np.array
+        co_mat_2D: 2D np.array
             2D matrix where rows are seed ROIs and columns the target's voxels
 
         Notes
         -----
         co_mat_2D is also stored in "temprorary_files" in the results folder
-        with the name : subj_2D_connectivity_matrix.npy
+        with the name: subj_2D_connectivity_matrix.npy
         """
         # Read the brain ribbon mask, which will become the number of columns
         # of the 2D connectivity matrix
@@ -244,7 +265,7 @@ class tracto_mat(Parcellotron):
         """ Fill input files substring to check and store input files path
         Returns
         -------
-        d : dict
+        d: dict
             the dictionnary containing the substring to find the input files
         """
         # self.in_names = {'coord':'omat*/coord_for_fdt_matrix'}
@@ -258,11 +279,11 @@ class tracto_mat(Parcellotron):
         """
         Returns
         -------
-        message : str
+        message: str
             A string describing the inputs you need for this modality
         """
         message = textwrap.dedent("""\
-            Inputs needed for this modality :
+            Inputs needed for this modality:
 
             """)
         return message
@@ -272,13 +293,13 @@ class tracto_mat(Parcellotron):
         matrix.
         Returns
         -------
-        co_mat_2D : 2D np.array
+        co_mat_2D: 2D np.array
             2D matrix where rows are seed ROIs and columns the target's voxels
 
         Notes
         -----
         co_mat_2D is also stored in "temprorary_files" in the results folder
-        with the name : subj_2D_connectivity_matrix.npy
+        with the name: subj_2D_connectivity_matrix.npy
         """
 
     def map_ROIs(self):
