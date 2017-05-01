@@ -72,6 +72,7 @@ class Parcellotron(metaclass=abc.ABCMeta):
         if not os.path.exists(self.res_dir):
             os.mkdir(self.res_dir)
 
+        # We check if the input files needed exist and we store their paths
         self.in_dict = self.init_input_dict()
         assert self.verify_input_folder(self.input_dir), self.inputs_needed()
 
@@ -89,6 +90,9 @@ class Parcellotron(metaclass=abc.ABCMeta):
             self.seed_path = os.path.join(self.input_dir, "seedROIs.nii.gz")
             self.target_path = os.path.join(self.input_dir, "targetMask.nii.gz")
 
+        # Create a map of correspondence among ROIs and voxels, where the ROI
+        # order also reflects that of the (subsequent) rows of the connectivity
+        # matrix
         (self.ind_xyz_ROIs, self.ROIs_label) = self.map_ROIs()
         print("""ADD A PREFIX TO THE SEED (MAYBE ALSO TARGET) TO DISANTANGLE
               ANALYSES WITH DIFFERENT SEEDS AND IF THERE IS NO PREFIX
@@ -104,23 +108,21 @@ class Parcellotron(metaclass=abc.ABCMeta):
             self.co_mat_2D = self.read_inputs_into_2D()
             # Save the connectivity_matrix in an npy file
             np.save(self.cmap2D_path, self.co_mat_2D)
-        # Create a map of correspondence among ROIs and voxels, where the ROI
-        # order also reflects that of the (subsequent) rows of the connectivity
-        # matrix
-        ###### if (not MNISPACE_OPTION) and (not os.path.exists(MNIROIS_FILES)):
-        (self.ind_xyz_ROIs, self.ROIs_label) = self.map_ROIs()
 
     # Init functions
     @abc.abstractmethod
     def init_input_dict(self):
-        """ Fill input files substring to check and store input files path
+        """ Fill input files substring to check and store input files paths.
         The function have to return the dictionnary
         """
         pass
 
     def verify_input_folder(self, in_path):
         """ This function aims to fill self.in_dict and verify that all the
-        input files need are in self.input_folder
+        input files need are in self.input_folder.
+        Note that the input files are only the files specific for a particular
+        modality type. The target and seed files will be handled in another
+        function.
         """
         assert hasattr(self, 'in_dict'), "self.in_dict wasn't initialized"
         assert self.in_dict != {}, "self.in_dict is empty !"
@@ -138,7 +140,17 @@ class Parcellotron(metaclass=abc.ABCMeta):
         """ Display a message to explain what input files you need and which
         name you need to indentify those files.
         """
-        pass
+        self.inputs_needed.__doc__ =\
+            cls.inputs_needed.__doc__ + self.inputs_needed.__doc__
+
+        return textwrap.dedent("""
+            The seed and target files should be in the subject input folder
+            of in a folder called "group_level" in the root folder (so the
+            parent folder of the subject directory)
+            +)  targetMask.nii[.gz] the 3D binary mask of the target area
+            ++) seedROIs.nii[.gz] 3D file with values indexing
+                Regions of Interest (ROIs).
+            """)
 
     def reset_outputs(self):
         """ This function will remove the content of self.res_dir
@@ -205,10 +217,7 @@ class tracto_4D(Parcellotron):
             Inputs needed for this modality:
             1) subj_4Dcmaps.nii[.gz] a 4D image with a connectivity map
                 for each time point
-            2) subj_targetMask.nii[.gz] the 3D binary mask of the brain ribbon
-            3) subj_seedROIs.nii[.gz] 3D file with values indexing
-                Regions of Interest (ROIs).
-            """)
+            """) + super().inputs_needed()
         return message
 
     def read_inputs_into_2D(self):
@@ -250,7 +259,7 @@ class tracto_4D(Parcellotron):
 
 
     def map_ROIs(self):
-        return ut.read_ROIs_from_nifti(self.seedROIs)
+        return ut.read_ROIs_from_nifti(self.seed_path)
 
 class tracto_mat(Parcellotron):
     """ Description
