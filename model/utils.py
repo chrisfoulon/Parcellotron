@@ -83,7 +83,7 @@ def read_dict_from_file(path, sep=None):
     ----------
     path : str
         path to the file to be read
-    sep : str[default None]
+    sep : str (default: None)
         the separator between key and value. The default None value will
         use spaces
     Returns
@@ -106,7 +106,8 @@ def read_ROIs_from_nifti(path):
     # (subsequently) created 2D_connectivity_matrix
     ind_2Drows_to_ROIs_label = ROIs[ind_xyz_ROIs]
 
-    return ind_xyz_ROIs, ind_2Drows_to_ROIs_label
+    return np.array(ind_xyz_ROIs), ind_2Drows_to_ROIs_label
 
-# tt = find_in_filename("/data", 'BCB*/folder*/pattern')
+# nn = "banane_pattern_"
+# tt = find_in_filename("/data/BCBLab", nn)
 # print(tt)

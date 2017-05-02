@@ -17,6 +17,10 @@ class Parcellotron(metaclass=abc.ABCMeta):
     ----------
     modality: {'tracto_4D', 'tracto_matrix', 'fmri_4D'}
         Name of the modality
+    seed_pref : str [optional]
+        prefix of the seed file
+    target_pref : str [optional]
+        prefix of the target file
     subj_folder: str
         Path to the subject folder
     subj_name: str
@@ -35,7 +39,7 @@ class Parcellotron(metaclass=abc.ABCMeta):
         this modality.  If it does not existThe folder is created when the
         object is instanciated
     in_dict: dict
-        A dictionnarie storing the key string to find in input files and their
+        A dictionnary storing the key string to find in input files and their
         corresponding input files.
         This attribut have to be filled by self.verify_input_folder()
     seed_path: str
@@ -43,7 +47,9 @@ class Parcellotron(metaclass=abc.ABCMeta):
         Regions of Interest (ROIs)
     target_path: str
         Path to the nifti 3D image of the target mask
-    ind_xyz_ROIs : TO FILL
+    seed_target_folder: str
+        Folder which contains the seed and the target files
+    ind_xyz_ROIs : np.array
         Index of the xyz coordinates of the voxels in each ROIs
     ROIs_label : np.array
         Create an index of the ROI associated with each row of the
@@ -58,16 +64,19 @@ class Parcellotron(metaclass=abc.ABCMeta):
     software_name = "COBRA"
 
     @abc.abstractmethod
-    def __init__(self, subj_path, modality, group_level=False):
+    def __init__(self, subj_path, modality, group_level=False, seed_pref='',
+                 target_pref=''):
         self.__doc__ = Parcellotron.__doc__ + self.__doc__
         self.modality = modality
+        self.seed_pref = seed_pref
+        self.target_pref = target_pref
         self.subj_folder = subj_path
         self.subj_name = os.path.basename(subj_path)
         self.input_dir = os.path.join(subj_path, modality)
         self.root_dir = ut.parent_dir(subj_path)
         self.group_level = group_level
 
-        self.res_dir = os.path.join(self.input_dir,
+        self.res_dir = os.path.join(self.input_dir, "_" +
                                     Parcellotron.software_name + "_results")
         if not os.path.exists(self.res_dir):
             os.mkdir(self.res_dir)
@@ -78,28 +87,27 @@ class Parcellotron(metaclass=abc.ABCMeta):
 
         # Here we check if we do group level analysis or not
         if self.group_level:
-            self.general_inputs = os.path.join(self.root_dir, "group_level")
-            if not os.path.exists(self.general_inputs):
-                os.mkdir(self.general_inputs)
-
-            self.seed_path = os.join.path(self.general_inputs,
-                                          "seedROIs.nii.gz")
-            self.target_path = os.join.path(self.general_inputs,
-                                            "targetMask.nii.gz")
+            self.seed_target_folder = os.path.join(
+                self.root_dir, "_group_level")
+            assert os.path.exists(self.seed_target_folder), """The general
+            folder "_group_level" does not exist
+            """
         else:
-            self.seed_path = os.path.join(self.input_dir, "seedROIs.nii.gz")
-            self.target_path = os.path.join(self.input_dir, "targetMask.nii.gz")
+            self.seed_target_folder = self.input_dir
+            assert os.path.exists(self.seed_target_folder), """The input
+            folder does not exist
+            """
+
+        self.init_seed_target_paths(self.seed_target_folder, self.seed_pref,
+                                    self.target_pref)
 
         # Create a map of correspondence among ROIs and voxels, where the ROI
         # order also reflects that of the (subsequent) rows of the connectivity
         # matrix
         (self.ind_xyz_ROIs, self.ROIs_label) = self.map_ROIs()
-        print("""ADD A PREFIX TO THE SEED (MAYBE ALSO TARGET) TO DISANTANGLE
-              ANALYSES WITH DIFFERENT SEEDS AND IF THERE IS NO PREFIX
-              WE JUST DO LIKE BEFORE""")
         # Name of the 2D connectivity matrix file
-        self.cmap2D_path =\
-            os.path.join(self.res_dir, self.subj_name + "_cmap2D.npy")
+        self.cmap2D_path = os.path.join(
+            self.res_dir, self.subj_name + "_cmap2D.npy")
 
         if os.path.exists(self.cmap2D_path):
             self.co_mat_2D = np.load(self.cmap2D_path)
@@ -147,11 +155,45 @@ class Parcellotron(metaclass=abc.ABCMeta):
             The seed and target files should be in the subject input folder
             of in a folder called "group_level" in the root folder (so the
             parent folder of the subject directory)
-            +)  targetMask.nii[.gz] the 3D binary mask of the target area
-            ++) seedROIs.nii[.gz] 3D file with values indexing
+            +)  [target_prefix_]targetMask.nii[.gz]: 3D binary mask of the
+                target area
+            ++) [seed_prefix_]seedROIs.nii[.gz]: 3D file with values indexing
                 Regions of Interest (ROIs).
             """)
 
+    def init_seed_target_paths(self, folder, seed_pref="", target_pref=""):
+        """ Given a folder path, the function will search and initialize the
+        seed and target file path.
+        Parameters
+        ----------
+        folder : str
+            Path to the folder which should contain the seed and target files
+        seed_pref : str [optional]
+            prefix of the seed file
+        target_pref : str [optional]
+            prefix of the target file
+        """
+        # Basic behaviour
+        if seed_pref == ""
+            seed_name = "seedROIs"
+        else:
+            if seed_pref.endswith("_"):
+                seed_name = seed_pref + "seedROIs"
+            else:
+                seed_name = seed_pref + "_seedROIs"
+
+        if target_pref == "":
+            target_name = "targetMask"
+        else:
+            if tagret_pref.endswith("_"):
+                target_name = target_pref + "targetMask"
+            else:
+                target_name = target_pref + "_targetMask"
+
+        self.seed_path = ut.find_in_filename(folder, seed_name)
+        self.target_path = ut.find_in_filename(folder, target_name)
+
+    # Tools
     def reset_outputs(self):
         """ This function will remove the content of self.res_dir
         """
