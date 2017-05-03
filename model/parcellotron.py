@@ -1,4 +1,4 @@
-seed_coord# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
 import abc
 import nibabel as nib
@@ -8,6 +8,7 @@ import os
 import glob
 import shutil
 import textwrap
+import pandas as pd
 
 class Parcellotron(metaclass=abc.ABCMeta):
     """ @Inheritance Parcellotron:
@@ -15,7 +16,7 @@ class Parcellotron(metaclass=abc.ABCMeta):
     used to parcellate an image.
     Attributes
     ----------
-    modality: {'tracto_4D', 'tracto_matrix', 'fmri_4D'}
+    modality: {'Tracto_4D', 'Tracto_mat', 'FMRI_4D'}
         Name of the modality
     seed_pref : str [optional]
         prefix of the seed file
@@ -59,6 +60,10 @@ class Parcellotron(metaclass=abc.ABCMeta):
         stored. If the matrix already exists, we won't compute it again
     co_mat_2D : np.array
         The 2D connectivity matrix calculated from the data
+
+    @Inheritance END
+
+
     """
 
     software_name = "COBRA"
@@ -66,7 +71,8 @@ class Parcellotron(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def __init__(self, subj_path, modality, group_level=False, seed_pref='',
                  target_pref=''):
-        self.__doc__ = Parcellotron.__doc__ + self.__doc__
+        self.__doc__ = Parcellotron.__doc__ + "####  " + \
+            self.__class__.__name__ + "  ####\n     " + self.__doc__
         self.modality = modality
         self.seed_pref = seed_pref
         self.target_pref = target_pref
@@ -213,7 +219,7 @@ class Parcellotron(metaclass=abc.ABCMeta):
     def write_clusters(self):
         pass
 
-class tracto_4D(Parcellotron):
+class Tracto_4D(Parcellotron):
     """ Object containing the informations used to parcellate the tractography
     of 1 subject from a 4D image.
     Parameters
@@ -221,24 +227,6 @@ class tracto_4D(Parcellotron):
     subj_path: str
         The path to the folder containing the different modality folders which
         contain the inputs.
-    Attributes
-    ----------
-    INHERITED
-    modality: {'tracto_4D', 'tracto_matrix', 'fmri_4D'}
-        Name of the modality
-    subj_folder: str
-        Path to the subject folder
-    subj_name: str
-        Name of the subject
-    root_dir: str
-        Parent directory of the subject folder (used especially for group level
-        analysis)
-    input_dir: str
-        Directory containing the inputs of the subject for this modality
-    res_dir: str
-        Folder which will contain the different results of the software, for
-        this modality. The folder is created when the object is instanciate if
-        it does not exist.
     """
     def __init__(self, subj_path, seed_pref='', target_pref=''):
         super().__init__(subj_path, self.__class__.__name__, seed_pref,
@@ -309,8 +297,14 @@ class tracto_4D(Parcellotron):
     def map_ROIs(self):
         return ut.read_ROIs_from_nifti(self.seed_path)
 
-class tracto_mat(Parcellotron):
+class Tracto_mat(Parcellotron):
     """ Description
+
+    Attributes
+    ----------
+    in_names: dict
+        Associate easier keys to the in_dict keys.
+        For instance : self.in_dict[self.in_names['fdt_matrix']]
     """
     def __init__(self, subj_path, seed_pref='', target_pref=''):
         super().__init__(subj_path, self.__class__.__name__, seed_pref,
@@ -326,10 +320,14 @@ class tracto_mat(Parcellotron):
         d: dict
             the dictionnary containing the substring to find the input files
         """
+        self.in_names = {
+            'fdt_coord':os.path.join('omat*', 'coord_for_fdt_matrix'),
+            'fdt_matrix':os.path.join('omat*', 'fdt_matrix'),
+            'fdt_paths':os.path.join('omat*', 'fdt_paths')}
         # self.in_names = {'coord':'omat*/coord_for_fdt_matrix'}
-        d = {os.path.join('omat*', 'coord_for_fdt_matrix'):'',
-             os.path.join('omat*', 'fdt_matrix'):'',
-             os.path.join('omat*', 'fdt_paths'):''}
+        d = {'fdt_coord':'',
+             'fdt_matrix':'',
+             'fdt_paths':''}
         return d
         # self.in_dict[self.in_names['coord']]
 
@@ -365,9 +363,41 @@ class tracto_mat(Parcellotron):
             return ut.read_ROIs_from_nifti(self.seedROIs)
         # CREATE seedROIs if it does not exist
 
+    def convert_dotbigmat(self):
+        """ Import the file fdt_matrix.npy into a np.array. If the file does
+        not exist, the function will import the fdt_matrix.dot file, save it
+        into the .npy file and return the np.array of its content. 
+        Returns
+        -------
+        fdt_matrix : np.array
+            The raw connectivity matrix in a python format.
+            The array contains 3 columns : x, y, value
+        """
+        fdt_dotmatrix_file = self.in_dict[self.in_names['fdt_matrix']]
+        fdt_matrix_py_file = os.path.join(self.seed_target_folder,
+                                          'fdt_matrix.npy')
+
+        if os.path.exists(fdt_matrix_py_file):
+            fdt_matrix = np.load(fdt_matrix_py_file)
+
+        else:
+            print("Please wait while I convert the fdt_matrix3.dot into \
+                  Python format...")
+            # To know how much time it takes
+
+            fdt_dotmatrix_df = pd.read_csv(
+                fdt_dotmatrix_file, delim_whitespace=True)
+            fdt_dotmatrix = fdt_dotmatrix_df.as_matrix()
+            # save the matrix in binary format
+            np.save(fdt_matrix_py_file, fdt_dotmatrix)
+
+            fdt_matrix = np.load(fdt_matrix_py_file)
+
+        return fdt_matrix
+
 
 # %%
-# test1 = tracto_4D("/data/BCBLab/test_COBRA/S1")
+# test1 = Tracto_4D("/data/BCBLab/test_COBRA/S1")
 # mat = test1.co_mat_2D
 #
 # mat.shape

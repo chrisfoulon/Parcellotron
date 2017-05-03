@@ -99,14 +99,25 @@ def read_dict_from_file(path, sep=None):
     return d
 
 def read_ROIs_from_nifti(path):
+    """ Read a nifti file (typically the seedROIs file), load it and extract the
+    seed coordinates and the ROIs labels.
+    Paramters
+    ---------
+    path: str
+        the path to the nifti file
+
+    Returns
+    -------
+
+    """
     ROIs = nib.load(path).get_data()
     # Create an index to the xyz coordinates of the voxels in each ROIs
-    ind_xyz_ROIs = np.where(ROIs)
+    seed_coord = np.where(ROIs)
     # Create an index of the ROI associated with each row of the
     # (subsequently) created 2D_connectivity_matrix
-    ind_2Drows_to_ROIs_label = ROIs[ind_xyz_ROIs]
+    ROIs_labels = ROIs[seed_coord]
 
-    return np.array(ind_xyz_ROIs), ind_2Drows_to_ROIs_label
+    return np.array(seed_coord), ROIs_labels
 
 # nn = "banane_pattern_"
 # tt = find_in_filename("/data/BCBLab", nn)

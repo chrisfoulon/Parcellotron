@@ -15,7 +15,7 @@ parser = argparse.ArgumentParser(description="Calculate the parcellation of\
                                  brain images")
 
 # The available modalities
-modality_arr = ['tracto_4D', 'tracto_mat']
+modality_arr = ['Tracto_4D', 'Tracto_mat']
 sim_mat_arr = ['distance', 'covariance', 'correlation']
 mat_transform_arr = ['log2', 'zscore', 'log2_zscore', 'none']
 parcellation_method_arr = ['KMeans', 'PCA']
@@ -61,11 +61,13 @@ def parcellate(path, mod, transformation, sim_mat, method):
 
     t0 = time.time()
     # modality choice
-    if mod == 'tracto_4D':
-        subj_obj = pa.tracto_4D(path)
+    if mod == 'Tracto_4D':
+        subj_obj = pa.Tracto_4D(path)
         mat_2D = subj_obj.co_mat_2D
     else:
-        raise Exception("bad modality")
+        raise Exception(mod + " is not yet implemented")
+
+    print(subj_obj.__doc__)
 
     # matrix transformation
     if transformation in ['log2', 'log2_zscore']:
