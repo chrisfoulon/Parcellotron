@@ -25,6 +25,10 @@ parcellation_method_arr = ['KMeans', 'PCA']
 
 
 parser.add_argument("subj_path", type=str, help="the subject folder path")
+parser.add_argument("-sp", "--seed_pref", type=str,
+                    help="A prefix to find a particular seedROIs file")
+parser.add_argument("-tp", "--target_pref", type=str,
+                    help="A prefix to find a particular targetMask file")
 parser.add_argument("modality", type=str, help="the input modality",
                     choices=modality_arr)
 parser.add_argument("similarity_matrix", type=str,
@@ -97,6 +101,7 @@ def parcellate(path, mod, transformation, sim_mat, method):
 
     return labels
 
+# We launch the function on the parameters
 subj_labels = parcellate(args.subj_path, args.modality,
                      args.transform,
                      args.similarity_matrix, args.parcellation_method)

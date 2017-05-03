@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+seed_coord# -*- coding: utf-8 -*-
 
 import abc
 import nibabel as nib
@@ -49,7 +49,7 @@ class Parcellotron(metaclass=abc.ABCMeta):
         Path to the nifti 3D image of the target mask
     seed_target_folder: str
         Folder which contains the seed and the target files
-    ind_xyz_ROIs : np.array
+    seed_coord : np.array
         Index of the xyz coordinates of the voxels in each ROIs
     ROIs_label : np.array
         Create an index of the ROI associated with each row of the
@@ -104,7 +104,7 @@ class Parcellotron(metaclass=abc.ABCMeta):
         # Create a map of correspondence among ROIs and voxels, where the ROI
         # order also reflects that of the (subsequent) rows of the connectivity
         # matrix
-        (self.ind_xyz_ROIs, self.ROIs_label) = self.map_ROIs()
+        (self.seed_coord, self.ROIs_label) = self.map_ROIs()
         # Name of the 2D connectivity matrix file
         self.cmap2D_path = os.path.join(
             self.res_dir, self.subj_name + "_cmap2D.npy")
@@ -174,7 +174,7 @@ class Parcellotron(metaclass=abc.ABCMeta):
             prefix of the target file
         """
         # Basic behaviour
-        if seed_pref == ""
+        if seed_pref == "":
             seed_name = "seedROIs"
         else:
             if seed_pref.endswith("_"):
@@ -191,7 +191,9 @@ class Parcellotron(metaclass=abc.ABCMeta):
                 target_name = target_pref + "_targetMask"
 
         self.seed_path = ut.find_in_filename(folder, seed_name)
+        print("SEED PATH: " + self.seed_path)
         self.target_path = ut.find_in_filename(folder, target_name)
+        print("TARGET PATH: " + self.target_path)
 
     # Tools
     def reset_outputs(self):
@@ -206,6 +208,9 @@ class Parcellotron(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def map_ROIs(self):
+        pass
+
+    def write_clusters(self):
         pass
 
 class tracto_4D(Parcellotron):
@@ -235,8 +240,9 @@ class tracto_4D(Parcellotron):
         this modality. The folder is created when the object is instanciate if
         it does not exist.
     """
-    def __init__(self, subj_path):
-        super().__init__(subj_path, self.__class__.__name__)
+    def __init__(self, subj_path, seed_pref='', target_pref=''):
+        super().__init__(subj_path, self.__class__.__name__, seed_pref,
+                         target_pref)
 
     def init_input_dict(self):
         """ Fill input files substring to check and store input files path
@@ -306,8 +312,9 @@ class tracto_4D(Parcellotron):
 class tracto_mat(Parcellotron):
     """ Description
     """
-    def __init__(self, subj_path):
-        super().__init__(subj_path, self.__class__.__name__)
+    def __init__(self, subj_path, seed_pref='', target_pref=''):
+        super().__init__(subj_path, self.__class__.__name__, seed_pref,
+                         target_pref)
         # seed_mask will be used to create the seedROIs. This file can be
         # in the subject input folder or in the general group input folder
         self.seed_mask
@@ -321,8 +328,8 @@ class tracto_mat(Parcellotron):
         """
         # self.in_names = {'coord':'omat*/coord_for_fdt_matrix'}
         d = {os.path.join('omat*', 'coord_for_fdt_matrix'):'',
-             os.path.join('omat*', 'fdt_matrix':''),
-             os.path.join('omat*', 'fdt_paths':'')}
+             os.path.join('omat*', 'fdt_matrix'):'',
+             os.path.join('omat*', 'fdt_paths'):''}
         return d
         # self.in_dict[self.in_names['coord']]
 
