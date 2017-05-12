@@ -1,19 +1,36 @@
 # -*- coding: utf-8 -*-
 
-import abc
-import nibabel as nib
-import numpy as np
-import utils as ut
 import os
 import glob
 import shutil
 import textwrap
+import abc
+import numpy as np
+import collections
+
 import pandas as pd
+import nibabel as nib
+
+import utils as ut
 
 class Parcellotron(metaclass=abc.ABCMeta):
     """ @Inheritance Parcellotron:
     Abstract class of an generic object which will contain informations
     used to parcellate an image.
+    Parameters
+    ----------
+    subj_path: str
+        The path to the folder containing the different modality folders which
+        contain the inputs.
+    modality: str
+        the name of the modality, it's automatically handled by the subclasses
+    group_level: bool
+        true if you want to do group level analysis
+    seed_pref : str [optional]
+        prefix of the seed file
+    target_pref : str [optional]
+        prefix of the target file
+
     Attributes
     ----------
     modality: {'Tracto_4D', 'Tracto_mat', 'FMRI_4D'}
@@ -22,6 +39,9 @@ class Parcellotron(metaclass=abc.ABCMeta):
         prefix of the seed file
     target_pref : str [optional]
         prefix of the target file
+    out_pref: str
+        prefix used to defferentiate the outputs (temporary or not) between
+        analyses with different seeds and/or targets
     subj_folder: str
         Path to the subject folder
     subj_name: str
@@ -207,6 +227,14 @@ class Parcellotron(metaclass=abc.ABCMeta):
         """
         shutil.rmtree(self.res_dir)
 
+    def set_output_prefix(self):
+        """ The seed and the target can be changed between trials and we will
+        handle the changes by indentifying the output with the name of the seed
+        and the target
+        """
+        if self.seed_pref == '' and self.target_pref == '':
+            self.out_pref = ''
+
     # Calculation functions
     @abc.abstractmethod
     def read_inputs_into_2D(self):
@@ -222,13 +250,9 @@ class Parcellotron(metaclass=abc.ABCMeta):
 class Tracto_4D(Parcellotron):
     """ Object containing the informations used to parcellate the tractography
     of 1 subject from a 4D image.
-    Parameters
-    ----------
-    subj_path: str
-        The path to the folder containing the different modality folders which
-        contain the inputs.
     """
-    def __init__(self, subj_path, seed_pref='', target_pref=''):
+    def __init__(self, subj_path, group_level=False, seed_pref='',
+                 target_pref=''):
         super().__init__(subj_path, self.__class__.__name__, seed_pref,
                          target_pref)
 
@@ -299,6 +323,10 @@ class Tracto_4D(Parcellotron):
 
 class Tracto_mat(Parcellotron):
     """ Description
+    Parameters
+    ----------
+    ROI_size: int
+        The ROIs' size you want for the seed region
 
     Attributes
     ----------
@@ -306,7 +334,8 @@ class Tracto_mat(Parcellotron):
         Associate easier keys to the in_dict keys.
         For instance : self.in_dict[self.in_names['fdt_matrix']]
     """
-    def __init__(self, subj_path, seed_pref='', target_pref=''):
+    def __init__(self, subj_path, group_level=False, seed_pref='',
+                 target_pref='', ROI_size):
         super().__init__(subj_path, self.__class__.__name__, seed_pref,
                          target_pref)
         # seed_mask will be used to create the seedROIs. This file can be
@@ -320,16 +349,15 @@ class Tracto_mat(Parcellotron):
         d: dict
             the dictionnary containing the substring to find the input files
         """
+        # to simplify a bit the access to the elements
         self.in_names = {
             'fdt_coord':os.path.join('omat*', 'coord_for_fdt_matrix'),
             'fdt_matrix':os.path.join('omat*', 'fdt_matrix'),
             'fdt_paths':os.path.join('omat*', 'fdt_paths')}
-        # self.in_names = {'coord':'omat*/coord_for_fdt_matrix'}
         d = {'fdt_coord':'',
              'fdt_matrix':'',
              'fdt_paths':''}
         return d
-        # self.in_dict[self.in_names['coord']]
 
     def inputs_needed(self):
         """
@@ -340,12 +368,13 @@ class Tracto_mat(Parcellotron):
         """
         message = textwrap.dedent("""\
             Inputs needed for this modality:
-
-            """)
+            1) coord_for_fdt_matrix[1-2-3].nii[.gz], fdt_paths.nii[.gz],
+                fdt_matrix[1-2-3].dot are the outputs of probtrackx software
+            """) + super().inputs_needed()
         return message
 
     def read_inputs_into_2D(self):
-        """ Read the inputs and tranform the 4D image into a 2D connectivity
+        """ Read the outputs of probtrackx and tranform into a 2D connectivity
         matrix.
         Returns
         -------
@@ -361,12 +390,19 @@ class Tracto_mat(Parcellotron):
     def map_ROIs(self):
         if os.path.exists(self.seedROIs):
             return ut.read_ROIs_from_nifti(self.seedROIs)
+        # Convert the omat3/fdt_matrix3.dot (whole brain) into npy
+        fdt_matrix = convert_dotbigmat(bd,subj,hemi)
+
+
+        # Read seed_mask, target_mask and coord_for_fdt_matrix3
+        seed_ind, seed_coord = get_mask_indices(bd,subj,hemi,'seed_mask')
+        target_ind, _ = get_mask_indices(bd,subj,hemi,'target_mask')
         # CREATE seedROIs if it does not exist
 
     def convert_dotbigmat(self):
         """ Import the file fdt_matrix.npy into a np.array. If the file does
         not exist, the function will import the fdt_matrix.dot file, save it
-        into the .npy file and return the np.array of its content. 
+        into the .npy file and return the np.array of its content.
         Returns
         -------
         fdt_matrix : np.array
@@ -394,6 +430,56 @@ class Tracto_mat(Parcellotron):
             fdt_matrix = np.load(fdt_matrix_py_file)
 
         return fdt_matrix
+
+    def get_mask_indices(self, mask_path):
+
+        datadir = bd + '/' + subj + '_' + hemi
+        mask_filename = datadir + '/' + maskname + '.nii.gz'
+
+        # Load the coordinates of the voxels on the whole-brain ribbon.
+        # The order of the coordinates in this text file is the same as the
+        # rows in the fdt_matrix3.dot matrix.
+        # NB: In matlab we need to add 1 since the matrix indices start from 1.
+        #     In Python they start from zero, so we leave them as they are.
+        coord = np.genfromtxt(self.in_dict[self.in_names['fdt_coord']])[:,0:3]
+
+        # Read the [mask_path].nii.gz
+        masknii = nib.load(mask_path).get_data()
+
+        # Get the xyz coordinates of each voxel in the mask
+        mask = np.array(np.where(masknii)).T
+        Nvoxels_in_mask = mask.shape[0]
+
+
+        # To get the coordinates of the mask, we calculate the intersection
+        # between the set of coordinates in coord (i.e. whole brain/rows of the
+        # fdt_matrix3) and the set of coordinates in mask. Steps are detailed
+        # below.
+
+        # (1) Transform the np.array of coordinates in a set, retaining the
+        #  original order. For this we need collections.OrderedDict since 'set'.
+        mask_set = collections.OrderedDict.fromkeys(
+            tuple(vox) for vox in mask)
+        coord_set = collections.OrderedDict.fromkeys(
+            tuple(vox) for vox in coord)
+
+        # (2) Create an "ordered dictionary" of coord
+        coord_dict = collections.OrderedDict(
+            (key,value) for value,key in enumerate(coord_set))
+
+        # (3) Take the intersection of the mask and coord set. For a dataset of
+        # ~63K coordinates. This returns a set of common xyz coordinates between
+        #  coord and mask. This method is ~250times faster than the one
+        # commented below, using original np.arrays
+        common_voxels = set(mask_set).intersection(coord_set)
+
+        # (4) Get the keys in the dictionary which correspond to the set of
+        # coordinates common to both mask and coord
+        ind_mask = sorted([ coord_dict[vox] for vox in common_voxels ])
+
+        coord_mask = coord[ind_mask, :]
+
+        return ind_mask, coord_mask
 
 
 # %%
