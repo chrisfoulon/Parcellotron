@@ -94,8 +94,9 @@ class Parcellotron(metaclass=abc.ABCMeta):
         self.__doc__ = Parcellotron.__doc__ + "####  " + \
             self.__class__.__name__ + "  ####\n     " + self.__doc__
         self.modality = modality
-        self.seed_pref = seed_pref
-        self.target_pref = target_pref
+        self.seed_pref = ut.format_pref(seed_pref)
+        self.target_pref = ut.format_pref(target_pref)
+        self.out_pref = self.set_output_prefix()
         self.subj_folder = subj_path
         self.subj_name = os.path.basename(subj_path)
         self.input_dir = os.path.join(subj_path, modality)
@@ -226,14 +227,6 @@ class Parcellotron(metaclass=abc.ABCMeta):
         """ This function will remove the content of self.res_dir
         """
         shutil.rmtree(self.res_dir)
-
-    def set_output_prefix(self):
-        """ The seed and the target can be changed between trials and we will
-        handle the changes by indentifying the output with the name of the seed
-        and the target
-        """
-        if self.seed_pref == '' and self.target_pref == '':
-            self.out_pref = ''
 
     # Calculation functions
     @abc.abstractmethod

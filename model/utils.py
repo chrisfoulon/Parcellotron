@@ -5,13 +5,51 @@ import glob
 import nibabel as nib
 import numpy as np
 
+def format_pref(pref):
+    """ Return a prefix in a common shape, i.e. remove the underscores arround
+    the string
+    Parameters
+    ----------
+    pref: str
+
+    Returns
+    -------
+    s: str
+        the string correctly formatted
+    """
+    s = pref
+    if s.startswith('_'):
+        s = s[1:]
+    if s.endswith('_'):
+        s = s[:-1]
+    return s
+
+def merge_prefixes(pref1, pref2):
+    """ Create a string with the given prefixes which can be a prefix of a file
+    path, i.e. no underscores at the beginning and an underscore at the end.
+    If both are empty, return an empty string
+    Parameters
+    ----------
+    pref1: str
+    pref2: str
+
+    Returns
+    -------
+    pref: str
+    """
+    pref = ''
+    if pref1 != '':
+        pref += pref1 + '_'
+    if pref2 != '':
+        pref += pref2 + '_'
+    return pref
 
 def parent_dir(path):
     """ Return the path to the parent directory of the given path, even if the
     path designates a folder (with or without "\\" at the end)
     Parameters
     ----------
-    path : str
+    path: str
         The path to the file/folder you want to know the parent folder
 
     Returns
@@ -27,7 +65,7 @@ def split_ext(path):
     (like .nii.gz)
     Parameters
     ----------
-    path : Full path or just file name
+    path: Full path or just file name
     Returns
     -------
     couple of file name(or path) and the extension(s)
