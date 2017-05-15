@@ -96,7 +96,7 @@ class Parcellotron(metaclass=abc.ABCMeta):
         self.modality = modality
         self.seed_pref = ut.format_pref(seed_pref)
         self.target_pref = ut.format_pref(target_pref)
-        self.out_pref = self.set_output_prefix()
+        self.out_pref = self.seed_pref + self.target_pref
         self.subj_folder = subj_path
         self.subj_name = os.path.basename(subj_path)
         self.input_dir = os.path.join(subj_path, modality)
@@ -327,8 +327,8 @@ class Tracto_mat(Parcellotron):
         Associate easier keys to the in_dict keys.
         For instance : self.in_dict[self.in_names['fdt_matrix']]
     """
-    def __init__(self, subj_path, group_level=False, seed_pref='',
-                 target_pref='', ROI_size):
+    def __init__(self, subj_path, ROI_size, group_level=False, seed_pref='',
+                 target_pref=''):
         super().__init__(subj_path, self.__class__.__name__, seed_pref,
                          target_pref)
         # seed_mask will be used to create the seedROIs. This file can be
@@ -347,9 +347,9 @@ class Tracto_mat(Parcellotron):
             'fdt_coord':os.path.join('omat*', 'coord_for_fdt_matrix'),
             'fdt_matrix':os.path.join('omat*', 'fdt_matrix'),
             'fdt_paths':os.path.join('omat*', 'fdt_paths')}
-        d = {'fdt_coord':'',
-             'fdt_matrix':'',
-             'fdt_paths':''}
+        d = {self.in_names['fdt_coord']:'',
+             self.in_names['fdt_matrix']:'',
+             self.in_names['fdt_paths']:''}
         return d
 
     def inputs_needed(self):
@@ -379,17 +379,17 @@ class Tracto_mat(Parcellotron):
         co_mat_2D is also stored in "temprorary_files" in the results folder
         with the name: subj_2D_connectivity_matrix.npy
         """
+        # Convert the omat3/fdt_matrix3.dot (whole brain) into npy
+        fdt_matrix = convert_dotbigmat(bd,subj,hemi)
 
     def map_ROIs(self):
         if os.path.exists(self.seedROIs):
             return ut.read_ROIs_from_nifti(self.seedROIs)
-        # Convert the omat3/fdt_matrix3.dot (whole brain) into npy
-        fdt_matrix = convert_dotbigmat(bd,subj,hemi)
 
 
         # Read seed_mask, target_mask and coord_for_fdt_matrix3
-        seed_ind, seed_coord = get_mask_indices(bd,subj,hemi,'seed_mask')
-        target_ind, _ = get_mask_indices(bd,subj,hemi,'target_mask')
+        # seed_ind, seed_coord = get_mask_indices(bd,subj,hemi,'seed_mask')
+        # target_ind, _ = get_mask_indices(bd,subj,hemi,'target_mask')
         # CREATE seedROIs if it does not exist
 
     def convert_dotbigmat(self):

@@ -57,7 +57,69 @@ parser_KMeans.add_argument('num_clu', help='Choose the number of cluster you \
 # answer = args.x**args.y
 args = parser.parse_args()
 
-def parcellate(path, mod, transformation, sim_mat, method):
+def parcellate_subj(path, mod, transformation, sim_mat, method):
+    """ Do the parcellation on one subject according the options given in
+    parameters
+
+    Parameters
+    ----------
+    path: str
+        The path to the folder containing the different modality folders which
+        contain the inputs.
+    mod: str
+        the name of the modality
+    transformation: str {'log2', 'zscore', 'log2_zscore', 'none'}
+        the transformation to do to the 2D connectivity matrix
+    sim_mat: str {'distance', 'covariance', 'correlation'}
+        the type of similarity matrix you want
+    method: str {'KMeans', 'PCA'}
+        the parcellation method
+    """
+    t0 = time.time()
+    # modality choice
+    if mod == 'Tracto_4D':
+        subj_obj = pa.Tracto_4D(path)
+        mat_2D = subj_obj.co_mat_2D
+    else:
+        raise Exception(mod + " is not yet implemented")
+
+    print(subj_obj.__doc__)
+
+    # matrix transformation
+    if transformation in ['log2', 'log2_zscore']:
+        mat_2D = mt.matrix_log2(mat_2D)
+    if transformation in ['zscore', 'log2_zscore']:
+        mat_2D = mt.matrix_zscore(mat_2D)
+
+    # similarity_matrix
+    if sim_mat == 'covariance':
+        sim = sm.similarity_covariance(mat_2D)
+    if sim_mat == 'correlation':
+        sim = sm.similarity_correlation(mat_2D)
+    if sim_mat == 'distance':
+        sim = sm.similarity_distance(mat_2D)
+
+    # parcellation
+    if method == 'KMeans':
+        labels = pm.parcellate_KMeans(sim, 10)
+    elif method == 'PCA':
+        labels = pm.parcellate_PCA(sim)
+    else:
+        raise Exception(method + " is not yet implemented")
+
+    t1 = time.time()
+    print("KMeans performed in %.3f s" % (t1 - t0))
+
+    IDX_CLU = np.argsort(labels)
+
+    similarity_matrix_reordered = sim[IDX_CLU,:][:,IDX_CLU]
+
+    plt.imshow(similarity_matrix_reordered, interpolation='none')
+    plt.show()
+
+    return labels
+
+def parcellate_group(path, mod, transformation, sim_mat, method):
 
     t0 = time.time()
     # modality choice
@@ -104,6 +166,6 @@ def parcellate(path, mod, transformation, sim_mat, method):
     return labels
 
 # We launch the function on the parameters
-subj_labels = parcellate(args.subj_path, args.modality,
+subj_labels = parcellate_subj(args.subj_path, args.modality,
                      args.transform,
                      args.similarity_matrix, args.parcellation_method)

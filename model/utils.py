@@ -6,8 +6,8 @@ import nibabel as nib
 import numpy as np
 
 def format_pref(pref):
-    """ Return a prefix in a common shape, i.e. remove the underscores arround
-    the string
+    """ Return a prefix in a common shape, i.e. remove the underscore at the
+    beginning and add one to the end
     Parameters
     ----------
     pref: str
@@ -18,31 +18,12 @@ def format_pref(pref):
         the string correctly formatted
     """
     s = pref
-    if s.startswith('_'):
-        s = s[1:]
-    if s.endswith('_'):
-        s = s[:-1]
+    if s != '':
+        if s.startswith('_'):
+            s = s[1:]
+        if not s.endswith('_'):
+            s = s + '_'
     return s
-
-def merge_prefixes(pref1, pref2):
-    """ Create a string with the given prefixes which can be a prefix of a file
-    path, i.e. no underscores at the beginning and an underscore at the end.
-    If both are empty, return an empty string
-    Parameters
-    ----------
-    pref1: str
-    pref2: str
-
-    Returns
-    -------
-    pref: str
-    """
-    pref = ''
-    if pref1 != '':
-        pref += pref1 + '_'
-    if pref2 != '':
-        pref += pref2 + '_'
-    return pref
 
 def parent_dir(path):
     """ Return the path to the parent directory of the given path, even if the
