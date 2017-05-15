@@ -1,15 +1,17 @@
 # -*- coding: utf-8 -*-
 
 import argparse
+import numpy as np
+import time
+import os
+
+from sklearn.cluster import KMeans
+import matplotlib.pyplot as plt
+
 import parcellotron as pa
 import matrix_tranformations as mt
 import similarity_matrices as sm
 import parcellation_methods as pm
-
-import numpy as np
-from sklearn.cluster import KMeans
-import matplotlib.pyplot as plt
-import time
 
 parser = argparse.ArgumentParser(description="Calculate the parcellation of\
                                  brain images")
@@ -23,8 +25,11 @@ parcellation_method_arr = ['KMeans', 'PCA']
 # I need subcommands
 # https://docs.python.org/3/library/argparse.html#module-argparse
 
-
-parser.add_argument("subj_path", type=str, help="the subject folder path")
+group = parser.add_mutually_exclusive_group()
+group.add_argument('-s', '--subject', type=str, help="the subject folder path")
+group.add_argument('-g', '--group', type=str,
+                   help="the root folder path, containing the subject folders")
+# parser.add_argument("subj_path", type=str, help="the subject folder path")
 parser.add_argument("-sp", "--seed_pref", type=str,
                     help="A prefix to find a particular seedROIs file")
 parser.add_argument("-tp", "--target_pref", type=str,
@@ -57,7 +62,10 @@ parser_KMeans.add_argument('num_clu', help='Choose the number of cluster you \
 # answer = args.x**args.y
 args = parser.parse_args()
 
-def parcellate_subj(path, mod, transformation, sim_mat, method):
+
+def parcellate_subj(path, mod, transformation, sim_mat, method,
+                        seed_pref='',
+                        target_pref=''):
     """ Do the parcellation on one subject according the options given in
     parameters
 
@@ -78,12 +86,14 @@ def parcellate_subj(path, mod, transformation, sim_mat, method):
     t0 = time.time()
     # modality choice
     if mod == 'Tracto_4D':
-        subj_obj = pa.Tracto_4D(path)
+        subj_obj = pa.Tracto_4D(path, group_level=False,
+                                seed_pref=seed_pref,
+                                target_pref=target_pref)
         mat_2D = subj_obj.co_mat_2D
     else:
         raise Exception(mod + " is not yet implemented")
 
-    print(subj_obj.__doc__)
+
 
     # matrix transformation
     if transformation in ['log2', 'log2_zscore']:
@@ -119,53 +129,89 @@ def parcellate_subj(path, mod, transformation, sim_mat, method):
 
     return labels
 
-def parcellate_group(path, mod, transformation, sim_mat, method):
+def parcellate_group(path, mod, transformation, sim_mat, method,
+                        seed_pref='',
+                        target_pref=''):
+    """ Do the parcellation on the group level according the options given in
+    parameters. The software will loop on all the folders of the root
 
-    t0 = time.time()
-    # modality choice
-    if mod == 'Tracto_4D':
-        subj_obj = pa.Tracto_4D(path)
-        mat_2D = subj_obj.co_mat_2D
-    else:
-        raise Exception(mod + " is not yet implemented")
+    Parameters
+    ----------
+    path: str
+        The path to the folder containing the different subject folders
+    mod: str
+        the name of the modality
+    transformation: str {'log2', 'zscore', 'log2_zscore', 'none'}
+        the transformation to do to the 2D connectivity matrix
+    sim_mat: str {'distance', 'covariance', 'correlation'}
+        the type of similarity matrix you want
+    method: str {'KMeans', 'PCA'}
+        the parcellation method
+    """
+    print(os.listdir(path))
+    for subj in sorted(os.listdir(path)):
+        subject_path = os.path.join(path, subj)
+        t0 = time.time()
+        # modality choice
+        if mod == 'Tracto_4D':
+            subj_obj = pa.Tracto_4D(subject_path, group_level=True,
+                                    seed_pref=seed_pref,
+                                    target_pref=target_pref)
+            mat_2D = subj_obj.co_mat_2D
+        else:
+            raise Exception(mod + " is not yet implemented")
 
-    print(subj_obj.__doc__)
+        print(subj_obj.__doc__)
 
-    # matrix transformation
-    if transformation in ['log2', 'log2_zscore']:
-        mat_2D = mt.matrix_log2(mat_2D)
-    if transformation in ['zscore', 'log2_zscore']:
-        mat_2D = mt.matrix_zscore(mat_2D)
+        # matrix transformation
+        if transformation in ['log2', 'log2_zscore']:
+            mat_2D = mt.matrix_log2(mat_2D)
+        if transformation in ['zscore', 'log2_zscore']:
+            mat_2D = mt.matrix_zscore(mat_2D)
 
-    # similarity_matrix
-    if sim_mat == 'covariance':
-        sim = sm.similarity_covariance(mat_2D)
-    if sim_mat == 'correlation':
-        sim = sm.similarity_correlation(mat_2D)
-    if sim_mat == 'distance':
-        sim = sm.similarity_distance(mat_2D)
+        # similarity_matrix
+        if sim_mat == 'covariance':
+            sim = sm.similarity_covariance(mat_2D)
+        if sim_mat == 'correlation':
+            sim = sm.similarity_correlation(mat_2D)
+        if sim_mat == 'distance':
+            sim = sm.similarity_distance(mat_2D)
 
-    # parcellation
-    if method == 'KMeans':
-        labels = pm.parcellate_KMeans(sim, 10)
-    elif method == 'PCA':
-        labels = pm.parcellate_PCA(sim)
-    else:
-        raise Exception(method + " is not yet implemented")
+        # parcellation
+        if method == 'KMeans':
+            labels = pm.parcellate_KMeans(sim, 10)
+        elif method == 'PCA':
+            labels = pm.parcellate_PCA(sim)
+        else:
+            raise Exception(method + " is not yet implemented")
 
-    t1 = time.time()
-    print("KMeans performed in %.3f s" % (t1 - t0))
+        t1 = time.time()
+        print("KMeans performed in %.3f s" % (t1 - t0))
 
-    IDX_CLU = np.argsort(labels)
+        IDX_CLU = np.argsort(labels)
 
-    similarity_matrix_reordered = sim[IDX_CLU,:][:,IDX_CLU]
+        similarity_matrix_reordered = sim[IDX_CLU,:][:,IDX_CLU]
 
-    plt.imshow(similarity_matrix_reordered, interpolation='none')
-    plt.show()
+        plt.imshow(similarity_matrix_reordered, interpolation='none')
+        plt.show()
 
-    return labels
+        return labels
 
-# We launch the function on the parameters
-subj_labels = parcellate_subj(args.subj_path, args.modality,
-                     args.transform,
-                     args.similarity_matrix, args.parcellation_method)
+# We launch the right function on the parameters
+print(args)
+if args.subject != None:
+    subj_labels = parcellate_subj(args.subject,
+                                  args.modality,
+                                  args.transform,
+                                  args.similarity_matrix,
+                                  args.parcellation_method,
+                                  args.seed_pref,
+                                  args.target_pref)
+else:
+    subj_labels = parcellate_group(args.group,
+                                  args.modality,
+                                  args.transform,
+                                  args.similarity_matrix,
+                                  args.parcellation_method,
+                                  args.seed_pref,
+                                  args.target_pref)

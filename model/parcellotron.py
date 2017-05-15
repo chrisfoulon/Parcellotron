@@ -98,10 +98,13 @@ class Parcellotron(metaclass=abc.ABCMeta):
         self.target_pref = ut.format_pref(target_pref)
         self.out_pref = self.seed_pref + self.target_pref
         self.subj_folder = subj_path
-        self.subj_name = os.path.basename(subj_path)
-        self.input_dir = os.path.join(subj_path, modality)
-        self.root_dir = ut.parent_dir(subj_path)
+        print("subj_folder : " + self.subj_folder)
+        self.subj_name = os.path.basename(self.subj_folder)
+        self.input_dir = os.path.join(self.subj_folder, modality)
+        self.root_dir = ut.parent_dir(self.subj_folder)
+        print("ROOT DIR :" + self.root_dir)
         self.group_level = group_level
+
 
         self.res_dir = os.path.join(self.input_dir, "_" +
                                     Parcellotron.software_name + "_results")
@@ -191,6 +194,8 @@ class Parcellotron(metaclass=abc.ABCMeta):
     def init_seed_target_paths(self, folder, seed_pref="", target_pref=""):
         """ Given a folder path, the function will search and initialize the
         seed and target file path.
+        WARNING: if you give a pref that can be found in several files of the
+        type (seedROIs or targetMask), the function will throw an error.
         Parameters
         ----------
         folder : str
@@ -205,22 +210,20 @@ class Parcellotron(metaclass=abc.ABCMeta):
             seed_name = "seedROIs"
         else:
             if seed_pref.endswith("_"):
-                seed_name = seed_pref + "seedROIs"
+                seed_name = seed_pref + "*seedROIs"
             else:
-                seed_name = seed_pref + "_seedROIs"
+                seed_name = seed_pref + "*_seedROIs"
 
         if target_pref == "":
             target_name = "targetMask"
         else:
-            if tagret_pref.endswith("_"):
-                target_name = target_pref + "targetMask"
+            if target_pref.endswith("_"):
+                target_name = target_pref + "*targetMask"
             else:
-                target_name = target_pref + "_targetMask"
+                target_name = target_pref + "*_targetMask"
 
         self.seed_path = ut.find_in_filename(folder, seed_name)
-        print("SEED PATH: " + self.seed_path)
         self.target_path = ut.find_in_filename(folder, target_name)
-        print("TARGET PATH: " + self.target_path)
 
     # Tools
     def reset_outputs(self):
@@ -246,8 +249,8 @@ class Tracto_4D(Parcellotron):
     """
     def __init__(self, subj_path, group_level=False, seed_pref='',
                  target_pref=''):
-        super().__init__(subj_path, self.__class__.__name__, seed_pref,
-                         target_pref)
+        super().__init__(subj_path, self.__class__.__name__, group_level,
+                         seed_pref, target_pref)
 
     def init_input_dict(self):
         """ Fill input files substring to check and store input files path
