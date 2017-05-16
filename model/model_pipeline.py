@@ -8,7 +8,7 @@ import os
 from sklearn.cluster import KMeans
 import matplotlib.pyplot as plt
 
-import parcellotron as pa
+import parcellobject as pa
 import matrix_tranformations as mt
 import similarity_matrices as sm
 import parcellation_methods as pm
@@ -38,7 +38,7 @@ parser.add_argument("modality", type=str, help="the input modality",
                     choices=modality_arr)
 parser.add_argument("similarity_matrix", type=str,
                     help="type of similarity_matrix you want",
-                    choices=sim_mat_arr, default='correlation')
+                    choices=sim_mat_arr)
 parser.add_argument("-t", "--transform", type=str,
                     help="the transformation(s) to apply to the similarity \
                     matrix", choices=mat_transform_arr, default='log2_zscore')
@@ -62,6 +62,13 @@ parser_KMeans.add_argument('num_clu', help='Choose the number of cluster you \
 # answer = args.x**args.y
 args = parser.parse_args()
 
+def memory_usage():
+    # return the memory usage in MB
+    import psutil
+    process = psutil.Process(os.getpid())
+    mem = process.memory_full_info()[0] / float(2 ** 20)
+    return mem
+
 
 def parcellate_subj(path, mod, transformation, sim_mat, method,
                         seed_pref='',
@@ -83,6 +90,10 @@ def parcellate_subj(path, mod, transformation, sim_mat, method,
     method: str {'KMeans', 'PCA'}
         the parcellation method
     """
+    import psutil
+    print(memory_usage())
+    mem = psutil.virtual_memory()
+    print(mem)
     t0 = time.time()
     # modality choice
     if mod == 'Tracto_4D':
@@ -126,6 +137,9 @@ def parcellate_subj(path, mod, transformation, sim_mat, method,
 
     plt.imshow(similarity_matrix_reordered, interpolation='none')
     plt.show()
+    print(memory_usage())
+    mem = psutil.virtual_memory()
+    print(mem)
 
     return labels
 
@@ -148,8 +162,11 @@ def parcellate_group(path, mod, transformation, sim_mat, method,
     method: str {'KMeans', 'PCA'}
         the parcellation method
     """
-    print(os.listdir(path))
+    labels_dict = {}
+    print(sorted(os.listdir(path)))
     for subj in sorted(os.listdir(path)):
+        if subj == "_group_level":
+            continue
         subject_path = os.path.join(path, subj)
         t0 = time.time()
         # modality choice
@@ -195,7 +212,10 @@ def parcellate_group(path, mod, transformation, sim_mat, method,
         plt.imshow(similarity_matrix_reordered, interpolation='none')
         plt.show()
 
-        return labels
+        labels_dict[subj_obj.subj_name] = labels
+        print(memory_usage())
+
+    return labels_dict
 
 # We launch the right function on the parameters
 print(args)

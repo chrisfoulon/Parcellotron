@@ -12,8 +12,11 @@ import pandas as pd
 import nibabel as nib
 
 import utils as ut
+import matrix_tranformations as mt
+import similarity_matrices as sm
+import parcellation_methods as pm
 
-class Parcellotron(metaclass=abc.ABCMeta):
+class Parcellobject(metaclass=abc.ABCMeta):
     """ @Inheritance Parcellotron:
     Abstract class of an generic object which will contain informations
     used to parcellate an image.
@@ -86,7 +89,7 @@ class Parcellotron(metaclass=abc.ABCMeta):
 
     """
 
-    software_name = "COBRA"
+    software_name = "Parcellotron"
 
     @abc.abstractmethod
     def __init__(self, subj_path, modality, group_level=False, seed_pref='',
@@ -98,13 +101,10 @@ class Parcellotron(metaclass=abc.ABCMeta):
         self.target_pref = ut.format_pref(target_pref)
         self.out_pref = self.seed_pref + self.target_pref
         self.subj_folder = subj_path
-        print("subj_folder : " + self.subj_folder)
         self.subj_name = os.path.basename(self.subj_folder)
         self.input_dir = os.path.join(self.subj_folder, modality)
         self.root_dir = ut.parent_dir(self.subj_folder)
-        print("ROOT DIR :" + self.root_dir)
         self.group_level = group_level
-
 
         self.res_dir = os.path.join(self.input_dir, "_" +
                                     Parcellotron.software_name + "_results")
@@ -147,6 +147,10 @@ class Parcellotron(metaclass=abc.ABCMeta):
             # Save the connectivity_matrix in an npy file
             np.save(self.cmap2D_path, self.co_mat_2D)
 
+        self.get_final_shape()
+
+        self.tr_mat_2D = self.mat_transform(tranformation)
+
     # Init functions
     @abc.abstractmethod
     def init_input_dict(self):
@@ -155,23 +159,9 @@ class Parcellotron(metaclass=abc.ABCMeta):
         """
         pass
 
-    def verify_input_folder(self, in_path):
-        """ This function aims to fill self.in_dict and verify that all the
-        input files need are in self.input_folder.
-        Note that the input files are only the files specific for a particular
-        modality type. The target and seed files will be handled in another
-        function.
-        """
-        assert hasattr(self, 'in_dict'), "self.in_dict wasn't initialized"
-        assert self.in_dict != {}, "self.in_dict is empty !"
-        boo = True
-        for k in self.in_dict.keys():
-            res = ut.find_in_filename(in_path, k)
-            if res == "":
-                print('I did not find the ' + k + ' file.')
-            self.in_dict[k] = res
-            boo = boo and (res != "")
-        return boo
+    @abc.abstractmethod
+    def get_final_shape(self):
+        pass
 
     @abc.abstractmethod
     def inputs_needed(self):
@@ -190,6 +180,24 @@ class Parcellotron(metaclass=abc.ABCMeta):
             ++) [seed_prefix_]seedROIs.nii[.gz]: 3D file with values indexing
                 Regions of Interest (ROIs).
             """)
+
+    def verify_input_folder(self, in_path):
+        """ This function aims to fill self.in_dict and verify that all the
+        input files need are in self.input_folder.
+        Note that the input files are only the files specific for a particular
+        modality type. The target and seed files will be handled in another
+        function.
+        """
+        assert hasattr(self, 'in_dict'), "self.in_dict wasn't initialized"
+        assert self.in_dict != {}, "self.in_dict is empty !"
+        boo = True
+        for k in self.in_dict.keys():
+            res = ut.find_in_filename(in_path, k)
+            if res == "":
+                print('I did not find the ' + k + ' file.')
+            self.in_dict[k] = res
+            boo = boo and (res != "")
+        return boo
 
     def init_seed_target_paths(self, folder, seed_pref="", target_pref=""):
         """ Given a folder path, the function will search and initialize the
@@ -240,10 +248,48 @@ class Parcellotron(metaclass=abc.ABCMeta):
     def map_ROIs(self):
         pass
 
+    @abc.abstractmethod
     def write_clusters(self):
         pass
 
-class Tracto_4D(Parcellotron):
+    def mat_transform(self, option):
+        tr_mat_2D = self.co_mat_2D
+        if option in ['log2', 'log2_zscore']:
+            tr_mat_2D = mt.matrix_log2(self.co_mat_2D)
+        if option in ['zscore', 'log2_zscore']:
+            tr_mat_2D = mt.matrix_zscore(self.co_mat_2D)
+        return tr_mat_2D
+
+    def similarity(self, option, mat):
+        if option == 'covariance':
+            sim_mat = sm.similarity_covariance(mat)
+        if option == 'correlation':
+            sim_mat = sm.similarity_correlation(mat)
+        if option == 'distance':
+            sim_mat = sm.similarity_distance(mat)
+        return sim_mat
+    #
+    # # parcellation
+    # if method == 'KMeans':
+    #     labels = pm.parcellate_KMeans(sim, 10)
+    # elif method == 'PCA':
+    #     labels = pm.parcellate_PCA(sim)
+    # else:
+    #     raise Exception(method + " is not yet implemented")
+    #
+    # t1 = time.time()
+    # print("KMeans performed in %.3f s" % (t1 - t0))
+    #
+    # IDX_CLU = np.argsort(labels)
+    #
+    # similarity_matrix_reordered = sim[IDX_CLU,:][:,IDX_CLU]
+    #
+    # plt.imshow(similarity_matrix_reordered, interpolation='none')
+    # plt.show()
+    #
+    # return labels
+
+class Tracto_4D(Parcellobject):
     """ Object containing the informations used to parcellate the tractography
     of 1 subject from a 4D image.
     """
@@ -275,6 +321,9 @@ class Tracto_4D(Parcellotron):
                 for each time point
             """) + super().inputs_needed()
         return message
+
+    def get_final_shape(self):
+        self.final_shape = nib.load(self.seed_path).shape
 
     def read_inputs_into_2D(self):
         """ Read the inputs and tranform the 4D image into a 2D connectivity
@@ -317,7 +366,49 @@ class Tracto_4D(Parcellotron):
     def map_ROIs(self):
         return ut.read_ROIs_from_nifti(self.seed_path)
 
-class Tracto_mat(Parcellotron):
+    def write_clusters(bd, subj, hemi, ROIlabels, seed_coord, labels, inputtype):
+        """ Write the clusters in a nifti 3D image where the voxels values are
+        the cluster labels
+        """
+
+        if inputtype == '4D_tracto':
+            datadir = bd + '/' + subj + '_' + hemi
+            nii_filename = datadir + '/' + subj + '_' + hemi + '_ROIs.nii.gz'
+            nii_image = nib.load(nii_filename)
+            nii = nii_image.get_data()
+
+        elif inputtype == 'matrix_tracto':
+            omat3dir = bd + '/' + subj + '_' + hemi + '/omat3'
+            nii_image = nib.load(omat3dir + '/fdt_paths.nii.gz')
+            nii = nii_image.get_data()
+
+        # Create an empty volume to store the clusters
+        nii_mask = np.zeros(nii.shape)
+
+        # prepare a vector of length nvox-in-seed = len(ROIlabels), to store
+        # the cluster label for each voxel of the seed region
+        ind_clusters = np.zeros(len(ROIlabels))
+
+        nvox = len(ROIlabels)
+
+        # To label each voxel with the corresponding cluster value we need to:
+        # (1) retrieve the voxel index (2D matrix row) for each ROI
+        # (2) assign the same cluster value for all voxels in an ROI
+        for ith_ROI in np.arange(len(labels)):
+            ind_ith_clu = np.where(ROIlabels==ith_ROI)  # (1)
+            ind_clusters[ind_ith_clu] = labels[ith_ROI] + 1 # (2)
+
+        # We take the vector ind_clusters containing the cluster values for each voxel
+        # and we assign that value in the corresponding xyz coordinates
+        for jth_vox in np.arange(nvox):
+            vox = seed_coord[jth_vox,:].astype('int')
+            nii_mask[vox[0], vox[1], vox[2]] = ind_clusters[jth_vox]
+
+
+        img_cluster = nib.Nifti1Image(nii_mask, nii_image.affine)
+        nib.save(img_cluster, "clusters.nii.gz")
+
+class Tracto_mat(Parcellobject):
     """ Description
     Parameters
     ----------
@@ -368,6 +459,10 @@ class Tracto_mat(Parcellotron):
                 fdt_matrix[1-2-3].dot are the outputs of probtrackx software
             """) + super().inputs_needed()
         return message
+
+    def get_final_shape(self):
+        self.final_shape = nib.load(
+            self.in_dict[self.in_names['fdt_paths']]).shape
 
     def read_inputs_into_2D(self):
         """ Read the outputs of probtrackx and tranform into a 2D connectivity
