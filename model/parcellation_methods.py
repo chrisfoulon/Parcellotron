@@ -24,7 +24,7 @@ def parcellate_KMeans(sim_mat, nb_clu):
 
     return labels
 
-def parcellate_PCA(similarity_matrix):
+def parcellate_PCA(similarity_matrix, output_folder):
     """ Parellate a 2D similarity matrix with the PCA algorithm
     Parameters
     ----------
@@ -109,6 +109,8 @@ def parcellate_PCA(similarity_matrix):
         factor_idx = np.where(labels == i)
         ROI_clu[factor_idx, i] = 1
 
+    np.save(os.path.join(output_folder, "ROI_clu.npy"), ROI_clu)
+
     # 'labels' is already the vector of cluster number for each ROI
     # Here we just visualize it as in SPSS
     ROI_clu_sort = np.zeros(ROI_clu.shape)
@@ -125,5 +127,8 @@ def parcellate_PCA(similarity_matrix):
     # Show how clusters look like in the similarity_matrix
     idx_sort = np.argsort(labels)
     sim_mat_clusters = sim_mat[idx_sort,:][:,idx_sort]
+
+    np.save(os.path.join(output_folder, "sim_mat_clusters.npy"),
+            sim_mat_clusters)
 
     return labels

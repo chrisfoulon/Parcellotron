@@ -268,26 +268,42 @@ class Parcellobject(metaclass=abc.ABCMeta):
         if option == 'distance':
             sim_mat = sm.similarity_distance(mat)
         return sim_mat
-    #
-    # # parcellation
-    # if method == 'KMeans':
-    #     labels = pm.parcellate_KMeans(sim, 10)
-    # elif method == 'PCA':
-    #     labels = pm.parcellate_PCA(sim)
-    # else:
-    #     raise Exception(method + " is not yet implemented")
-    #
-    # t1 = time.time()
-    # print("KMeans performed in %.3f s" % (t1 - t0))
-    #
-    # IDX_CLU = np.argsort(labels)
-    #
-    # similarity_matrix_reordered = sim[IDX_CLU,:][:,IDX_CLU]
-    #
-    # plt.imshow(similarity_matrix_reordered, interpolation='none')
-    # plt.show()
-    #
-    # return labels
+
+    def parcellate(self, option, mat, KMeans_nclu=None):
+        """ Perform the parcellation chosen on the matrix.
+        Paramters
+        ---------
+        option: str ['KMeans', 'PCA']
+            The name of the parcellation method
+        mat: np.array
+            Matrix you want to parcellate
+        KMeans_nclu: int
+            Number of clusters you want to find with the KMeans algorithm
+
+        Returns
+        -------
+        labels: 
+        """
+        if option == 'KMeans':
+            if KMeans_nclu != None:
+                labels = pm.parcellate_KMeans(sim, 10)
+            else:
+                raise Exception("""You need to define a number of cluster
+                                to use the KMeans algorithm""")
+        elif option == 'PCA':
+            labels = pm.parcellate_PCA(sim)
+        else:
+            raise Exception(option + " is not yet implemented")
+
+        return labels
+
+    def temp_visualization(self):
+        IDX_CLU = np.argsort(self.labels)
+
+        similarity_matrix_reordered = sim[IDX_CLU,:][:,IDX_CLU]
+
+        plt.imshow(similarity_matrix_reordered, interpolation='none')
+        plt.show()
 
 class Tracto_4D(Parcellobject):
     """ Object containing the informations used to parcellate the tractography
