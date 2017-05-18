@@ -3,7 +3,7 @@
 from sklearn.cluster import KMeans
 from sklearn import decomposition
 import numpy as np
-import matrix_tranformations as mt
+import matrix_transformations as mt
 
 def parcellate_KMeans(sim_mat, nb_clu):
     """ Parellate a 2D similarity matrix with the KMeans algorithm

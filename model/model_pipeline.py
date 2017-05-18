@@ -9,7 +9,7 @@ from sklearn.cluster import KMeans
 import matplotlib.pyplot as plt
 
 import parcellobject as pa
-import matrix_tranformations as mt
+import matrix_transformations as mt
 import similarity_matrices as sm
 import parcellation_methods as pm
 
@@ -70,168 +70,188 @@ def memory_usage():
     return mem
 
 
-def parcellate_subj(path, mod, transformation, sim_mat, method,
-                        seed_pref='',
-                        target_pref=''):
-    """ Do the parcellation on one subject according the options given in
-    parameters
 
-    Parameters
-    ----------
-    path: str
-        The path to the folder containing the different modality folders which
-        contain the inputs.
-    mod: str
-        the name of the modality
-    transformation: str {'log2', 'zscore', 'log2_zscore', 'none'}
-        the transformation to do to the 2D connectivity matrix
-    sim_mat: str {'distance', 'covariance', 'correlation'}
-        the type of similarity matrix you want
-    method: str {'KMeans', 'PCA'}
-        the parcellation method
-    """
-    import psutil
-    print(memory_usage())
-    mem = psutil.virtual_memory()
-    print(mem)
-    t0 = time.time()
-    # modality choice
-    if mod == 'Tracto_4D':
-        subj_obj = pa.Tracto_4D(path, group_level=False,
-                                seed_pref=seed_pref,
-                                target_pref=target_pref)
-        mat_2D = subj_obj.co_mat_2D
+
+def parcellate_obj(group, path, mod, transformation, sim_mat, method,
+                   K_nclu=None, seed_pref='', target_pref=''):
+
+    if group != None:
+        files_arr = [dir for dir in sorted(
+            os.listdir(path)) if dir != '_group_level']
     else:
-        raise Exception(mod + " is not yet implemented")
+        files_arr = [path]
 
-
-
-    # matrix transformation
-    if transformation in ['log2', 'log2_zscore']:
-        mat_2D = mt.matrix_log2(mat_2D)
-    if transformation in ['zscore', 'log2_zscore']:
-        mat_2D = mt.matrix_zscore(mat_2D)
-
-    # similarity_matrix
-    if sim_mat == 'covariance':
-        sim = sm.similarity_covariance(mat_2D)
-    if sim_mat == 'correlation':
-        sim = sm.similarity_correlation(mat_2D)
-    if sim_mat == 'distance':
-        sim = sm.similarity_distance(mat_2D)
-
-    # parcellation
-    if method == 'KMeans':
-        labels = pm.parcellate_KMeans(sim, 10)
-    elif method == 'PCA':
-        labels = pm.parcellate_PCA(sim)
-    else:
-        raise Exception(method + " is not yet implemented")
-
-    t1 = time.time()
-    print("KMeans performed in %.3f s" % (t1 - t0))
-
-    IDX_CLU = np.argsort(labels)
-
-    similarity_matrix_reordered = sim[IDX_CLU,:][:,IDX_CLU]
-
-    plt.imshow(similarity_matrix_reordered, interpolation='none')
-    plt.show()
-    print(memory_usage())
-    mem = psutil.virtual_memory()
-    print(mem)
-
-    return labels
-
-def parcellate_group(path, mod, transformation, sim_mat, method,
-                        seed_pref='',
-                        target_pref=''):
-    """ Do the parcellation on the group level according the options given in
-    parameters. The software will loop on all the folders of the root
-
-    Parameters
-    ----------
-    path: str
-        The path to the folder containing the different subject folders
-    mod: str
-        the name of the modality
-    transformation: str {'log2', 'zscore', 'log2_zscore', 'none'}
-        the transformation to do to the 2D connectivity matrix
-    sim_mat: str {'distance', 'covariance', 'correlation'}
-        the type of similarity matrix you want
-    method: str {'KMeans', 'PCA'}
-        the parcellation method
-    """
-    labels_dict = {}
-    print(sorted(os.listdir(path)))
-    for subj in sorted(os.listdir(path)):
-        if subj == "_group_level":
-            continue
-        subject_path = os.path.join(path, subj)
-        t0 = time.time()
-        # modality choice
+    for dir in files_arr:
         if mod == 'Tracto_4D':
-            subj_obj = pa.Tracto_4D(subject_path, group_level=True,
+            subj_obj = pa.Tracto_4D(path, group_level=False,
                                     seed_pref=seed_pref,
                                     target_pref=target_pref)
             mat_2D = subj_obj.co_mat_2D
         else:
             raise Exception(mod + " is not yet implemented")
 
-        print(subj_obj.__doc__)
+        subj_obj.mat_transform(transformation, mat_2D)
+        subj_obj.similarity(sim_mat, subj_obj.tr_mat_2D)
+        subj_obj.parcellate(method, subj_obj.sim_mat, K_nclu)
 
-        # matrix transformation
-        if transformation in ['log2', 'log2_zscore']:
-            mat_2D = mt.matrix_log2(mat_2D)
-        if transformation in ['zscore', 'log2_zscore']:
-            mat_2D = mt.matrix_zscore(mat_2D)
 
-        # similarity_matrix
-        if sim_mat == 'covariance':
-            sim = sm.similarity_covariance(mat_2D)
-        if sim_mat == 'correlation':
-            sim = sm.similarity_correlation(mat_2D)
-        if sim_mat == 'distance':
-            sim = sm.similarity_distance(mat_2D)
-
-        # parcellation
-        if method == 'KMeans':
-            labels = pm.parcellate_KMeans(sim, 10)
-        elif method == 'PCA':
-            labels = pm.parcellate_PCA(sim)
-        else:
-            raise Exception(method + " is not yet implemented")
-
-        t1 = time.time()
-        print("KMeans performed in %.3f s" % (t1 - t0))
-
-        IDX_CLU = np.argsort(labels)
-
-        similarity_matrix_reordered = sim[IDX_CLU,:][:,IDX_CLU]
-
-        plt.imshow(similarity_matrix_reordered, interpolation='none')
-        plt.show()
-
-        labels_dict[subj_obj.subj_name] = labels
-        print(memory_usage())
-
-    return labels_dict
+# def parcellate_subj(path, mod, transformation, sim_mat, method,
+#                         seed_pref='',
+#                         target_pref=''):
+#     """ Do the parcellation on one subject according the options given in
+#     parameters
+#
+#     Parameters
+#     ----------
+#     path: str
+#         The path to the folder containing the different modality folders which
+#         contain the inputs.
+#     mod: str
+#         the name of the modality
+#     transformation: str {'log2', 'zscore', 'log2_zscore', 'none'}
+#         the transformation to do to the 2D connectivity matrix
+#     sim_mat: str {'distance', 'covariance', 'correlation'}
+#         the type of similarity matrix you want
+#     method: str {'KMeans', 'PCA'}
+#         the parcellation method
+#     """
+#     import psutil
+#     print(memory_usage())
+#     mem = psutil.virtual_memory()
+#     print(mem)
+#     t0 = time.time()
+#     # modality choice
+#     if mod == 'Tracto_4D':
+#         subj_obj = pa.Tracto_4D(path, group_level=False,
+#                                 seed_pref=seed_pref,
+#                                 target_pref=target_pref)
+#         mat_2D = subj_obj.co_mat_2D
+#     else:
+#         raise Exception(mod + " is not yet implemented")
+#
+#
+#
+#     # matrix transformation
+#     if transformation in ['log2', 'log2_zscore']:
+#         mat_2D = mt.matrix_log2(mat_2D)
+#     if transformation in ['zscore', 'log2_zscore']:
+#         mat_2D = mt.matrix_zscore(mat_2D)
+#
+#     # similarity_matrix
+#     if sim_mat == 'covariance':
+#         sim = sm.similarity_covariance(mat_2D)
+#     if sim_mat == 'correlation':
+#         sim = sm.similarity_correlation(mat_2D)
+#     if sim_mat == 'distance':
+#         sim = sm.similarity_distance(mat_2D)
+#
+#     # parcellation
+#     if method == 'KMeans':
+#         labels = pm.parcellate_KMeans(sim, 10)
+#     elif method == 'PCA':
+#         labels = pm.parcellate_PCA(sim)
+#     else:
+#         raise Exception(method + " is not yet implemented")
+#
+#     t1 = time.time()
+#     print("KMeans performed in %.3f s" % (t1 - t0))
+#
+#     IDX_CLU = np.argsort(labels)
+#
+#     similarity_matrix_reordered = sim[IDX_CLU,:][:,IDX_CLU]
+#
+#     plt.imshow(similarity_matrix_reordered, interpolation='none')
+#     plt.show()
+#     print(memory_usage())
+#     mem = psutil.virtual_memory()
+#     print(mem)
+#
+#     return labels
+#
+# def parcellate_group(path, mod, transformation, sim_mat, method,
+#                         seed_pref='',
+#                         target_pref=''):
+#     """ Do the parcellation on the group level according the options given in
+#     parameters. The software will loop on all the folders of the root
+#
+#     Parameters
+#     ----------
+#     path: str
+#         The path to the folder containing the different subject folders
+#     mod: str
+#         the name of the modality
+#     transformation: str {'log2', 'zscore', 'log2_zscore', 'none'}
+#         the transformation to do to the 2D connectivity matrix
+#     sim_mat: str {'distance', 'covariance', 'correlation'}
+#         the type of similarity matrix you want
+#     method: str {'KMeans', 'PCA'}
+#         the parcellation method
+#     """
+#     labels_dict = {}
+#     print(sorted(os.listdir(path)))
+#     for subj in sorted(os.listdir(path)):
+#         if subj == "_group_level":
+#             continue
+#         subject_path = os.path.join(path, subj)
+#         t0 = time.time()
+#         # modality choice
+#         if mod == 'Tracto_4D':
+#             subj_obj = pa.Tracto_4D(subject_path, group_level=True,
+#                                     seed_pref=seed_pref,
+#                                     target_pref=target_pref)
+#             mat_2D = subj_obj.co_mat_2D
+#         else:
+#             raise Exception(mod + " is not yet implemented")
+#
+#         print(subj_obj.__doc__)
+#
+#         # matrix transformation
+#         if transformation in ['log2', 'log2_zscore']:
+#             mat_2D = mt.matrix_log2(mat_2D)
+#         if transformation in ['zscore', 'log2_zscore']:
+#             mat_2D = mt.matrix_zscore(mat_2D)
+#
+#         # similarity_matrix
+#         if sim_mat == 'covariance':
+#             sim = sm.similarity_covariance(mat_2D)
+#         if sim_mat == 'correlation':
+#             sim = sm.similarity_correlation(mat_2D)
+#         if sim_mat == 'distance':
+#             sim = sm.similarity_distance(mat_2D)
+#
+#         # parcellation
+#         if method == 'KMeans':
+#             labels = pm.parcellate_KMeans(sim, 10)
+#         elif method == 'PCA':
+#             labels = pm.parcellate_PCA(sim)
+#         else:
+#             raise Exception(method + " is not yet implemented")
+#
+#         t1 = time.time()
+#         print("KMeans performed in %.3f s" % (t1 - t0))
+#
+#         IDX_CLU = np.argsort(labels)
+#
+#         similarity_matrix_reordered = sim[IDX_CLU,:][:,IDX_CLU]
+#
+#         plt.imshow(similarity_matrix_reordered, interpolation='none')
+#         plt.show()
+#
+#         labels_dict[subj_obj.subj_name] = labels
+#         print(memory_usage())
+#
+#     return labels_dict
 
 # We launch the right function on the parameters
 print(args)
-if args.subject != None:
-    subj_labels = parcellate_subj(args.subject,
-                                  args.modality,
-                                  args.transform,
-                                  args.similarity_matrix,
-                                  args.parcellation_method,
-                                  args.seed_pref,
-                                  args.target_pref)
-else:
-    subj_labels = parcellate_group(args.group,
-                                  args.modality,
-                                  args.transform,
-                                  args.similarity_matrix,
-                                  args.parcellation_method,
-                                  args.seed_pref,
-                                  args.target_pref)
+if not ('num_clu' in args):
+    args.num_clu = None
+subj_labels = parcellate_obj(args.subject,
+                             args.group,
+                             args.modality,
+                             args.transform,
+                             args.similarity_matrix,
+                             args.parcellation_method,
+                             args.num_clu,
+                             args.seed_pref,
+                             args.target_pref)
