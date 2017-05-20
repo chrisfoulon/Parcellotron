@@ -18,6 +18,7 @@ import matrix_transformations as mt
 import similarity_matrices as sm
 import parcellation_methods as pm
 
+
 class Parcellobject(metaclass=abc.ABCMeta):
     """ @Inheritance Parcellobject:
     Abstract class of an generic object which will contain informations
@@ -142,7 +143,7 @@ class Parcellobject(metaclass=abc.ABCMeta):
         # Create a map of correspondence among ROIs and voxels, where the ROI
         # order also reflects that of the (subsequent) rows of the connectivity
         # matrix
-        (self.seed_coord, self.ROIs_label) = self.map_ROIs()
+        (self.seed_coord, self.ROIs_labels) = self.map_ROIs()
         # Name of the 2D connectivity matrix file
         self.cmap2D_path = os.path.join(
             self.res_dir, self.subj_name + "_cmap2D.npy")
@@ -155,7 +156,7 @@ class Parcellobject(metaclass=abc.ABCMeta):
             # Save the connectivity_matrix in an npy file
             np.save(self.cmap2D_path, self.co_mat_2D)
 
-        self.get_final_shape()
+        self.set_final_shape()
 
     # Init functions
     @abc.abstractmethod
@@ -163,10 +164,6 @@ class Parcellobject(metaclass=abc.ABCMeta):
         """ Fill input files substring to check and store input files paths.
         The function have to return the dictionnary
         """
-        pass
-
-    @abc.abstractmethod
-    def get_final_shape(self):
         pass
 
     @abc.abstractmethod
@@ -226,6 +223,9 @@ class Parcellobject(metaclass=abc.ABCMeta):
               'ROI_clu': os.path.join(
                   path, self.out_pref + 'ROI_clu.npy')}
         return dd
+
+    def set_final_shape(self):
+        self.final_shape = nib.load(self.seed_path).shape
 
     # Tools
     def reset_outputs(self):
@@ -300,6 +300,8 @@ class Parcellobject(metaclass=abc.ABCMeta):
             raise Exception(option + " is not yet implemented")
 
         self.labels = labels
+
+        return self.labels
 
     def parcellate_KMeans(self, sim_mat, nb_clu):
         """ Parellate a 2D similarity matrix with the KMeans algorithm
@@ -440,6 +442,7 @@ class Parcellobject(metaclass=abc.ABCMeta):
 
         return labels
 
+
 class Tracto_4D(Parcellobject):
     """ Object containing the informations used to parcellate the tractography
     of 1 subject from a 4D image.
@@ -472,9 +475,6 @@ class Tracto_4D(Parcellobject):
                 for each time point
             """) + super().inputs_needed()
         return message
-
-    def get_final_shape(self):
-        self.final_shape = nib.load(self.seed_path).shape
 
     def read_inputs_into_2D(self):
         """ Read the inputs and transform the 4D image into a 2D connectivity
@@ -513,51 +513,42 @@ class Tracto_4D(Parcellobject):
 
         return co_mat_2D
 
-
     def map_ROIs(self):
         return ut.read_ROIs_from_nifti(self.seed_path)
 
-    def write_clusters(bd, subj, hemi, ROIlabels, seed_coord, labels, inputtype):
+    def write_clusters(self):
         """ Write the clusters in a nifti 3D image where the voxels values are
         the cluster labels
         """
-
-        if inputtype == '4D_tracto':
-            datadir = bd + '/' + subj + '_' + hemi
-            nii_filename = datadir + '/' + subj + '_' + hemi + '_ROIs.nii.gz'
-            nii_image = nib.load(nii_filename)
-            nii = nii_image.get_data()
-
-        elif inputtype == 'matrix_tracto':
-            omat3dir = bd + '/' + subj + '_' + hemi + '/omat3'
-            nii_image = nib.load(omat3dir + '/fdt_paths.nii.gz')
-            nii = nii_image.get_data()
-
         # Create an empty volume to store the clusters
-        nii_mask = np.zeros(nii.shape)
+        nii_mask = np.zeros(self.final_shape)
 
+        nvox = len(self.ROIs_labels)
         # prepare a vector of length nvox-in-seed = len(ROIlabels), to store
         # the cluster label for each voxel of the seed region
-        ind_clusters = np.zeros(len(ROIlabels))
+        ind_clusters = np.zeros(nvox)
 
-        nvox = len(ROIlabels)
+
 
         # To label each voxel with the corresponding cluster value we need to:
         # (1) retrieve the voxel index (2D matrix row) for each ROI
         # (2) assign the same cluster value for all voxels in an ROI
-        for ith_ROI in np.arange(len(labels)):
-            ind_ith_clu = np.where(ROIlabels==ith_ROI)  # (1)
-            ind_clusters[ind_ith_clu] = labels[ith_ROI] + 1 # (2)
+        for ith_ROI in np.arange(len(self.labels)):
+            ind_ith_clu = np.array(np.where(self.ROIs_labels == ith_ROI))  # (1)
+            ind_clusters[ind_ith_clu] = self.labels[ith_ROI] + 1 # (2)
 
         # We take the vector ind_clusters containing the cluster values for each voxel
         # and we assign that value in the corresponding xyz coordinates
         for jth_vox in np.arange(nvox):
-            vox = seed_coord[jth_vox,:].astype('int')
+            vox = self.seed_coord[jth_vox,:].astype('int')
             nii_mask[vox[0], vox[1], vox[2]] = ind_clusters[jth_vox]
 
 
         img_cluster = nib.Nifti1Image(nii_mask, nii_image.affine)
-        nib.save(img_cluster, "clusters.nii.gz")
+
+        cluster_filename = datadir + '/' + 'clusters.nii.gz'
+        nib.save(img_cluster, cluster_filename)
+
 
 class Tracto_mat(Parcellobject):
     """ Description
@@ -613,10 +604,6 @@ class Tracto_mat(Parcellobject):
             """) + super().inputs_needed()
         return message
 
-    def get_final_shape(self):
-        self.final_shape = nib.load(
-            self.in_dict[self.in_names['fdt_paths']]).shape
-
     def read_inputs_into_2D(self):
         """ Read the outputs of probtrackx and transform into a 2D connectivity
         matrix.
@@ -637,7 +624,7 @@ class Tracto_mat(Parcellobject):
         if os.path.exists(self.seedROIs):
             return ut.read_ROIs_from_nifti(self.seedROIs)
         else:
-            
+
 
 
         # Read seed_mask, target_mask and coord_for_fdt_matrix3

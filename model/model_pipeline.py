@@ -38,8 +38,16 @@ parser.add_argument("-sp", "--seed_pref", type=str,
                     help="A prefix to find a particular seedROIs file")
 parser.add_argument("-tp", "--target_pref", type=str,
                     help="A prefix to find a particular targetMask file")
-parser.add_argument("modality", type=str, help="the input modality",
-                    choices=modality_arr)
+# parser.add_argument("modality", type=str, help="the input modality",
+#                     choices=modality_arr)
+
+parser_4D = sub_parsers.add_parser('-4D',
+                                   help='Tractography in 4D format')
+parser_mat = sub_parsers.add_parser('-mat',
+                                    help='Tractography in probtrackx matrix format')
+parser_mat.add_argument('ROI_size', type=int,
+                       help='The size in cubic millimeters')
+
 parser.add_argument("similarity_matrix", type=str,
                     help="type of similarity_matrix you want",
                     choices=sim_mat_arr)
@@ -265,7 +273,7 @@ def filter_args(args):
             os.listdir(path)) if dir != '_group_level']
     else:
         files_arr = [path]
-
+    if args.4D != None
     mod = args.modality
     tr = args.transform
     sim = args.similarity_matrix
