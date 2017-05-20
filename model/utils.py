@@ -56,17 +56,17 @@ def split_ext(path):
     return splitext(path)
 
 def find_in_filename(path, string):
-    """ Find string in the filename of path (only in the basename).
-        Note that the filename is splitted by underscores.
+    """ Find file containing (only in the basename) in the given folder.
+    Note that the basename is splitted by underscores.
     Parameters
     ----------
-    path : str
+    path: str
         the path of the filename you want to parse
-    string : str
+    string: str
         the string you want to find in path
     Returns
     -------
-    file_path : str
+    file_path: str
         the path to the file if ONE filename contains string
         empty str if not
         Throw an error if several files contain string
@@ -79,6 +79,34 @@ def find_in_filename(path, string):
         return arr[0]
     else:
         raise Exception("I found several files corresponding to this pattern")
+
+def find_with_pref(path, pref, string):
+    """ Find string in the filename of path (only in the basename).
+    Note that the basename is splitted by underscores.
+    Parameters
+    ----------
+    path: str
+        the path of the filename you want to parse
+    pref: str
+        the prefix you want to find in the basename
+    string: str
+        the string you want to find in path
+    Returns
+    -------
+    file_path: str
+        the path to the file if ONE filename contains string
+        empty str if not
+        Throw an error if several files contain string
+    """
+    if pref == "":
+        pattern = string
+    else:
+        if pref.endswith("_"):
+            pattern = pref + "*" + string
+        else:
+            pattern = pref + "*_" + string
+    file_path = find_in_filename(path, pattern)
+    return file_path
 
 def save_dict(d, path):
     """ Save a dictionary in a file

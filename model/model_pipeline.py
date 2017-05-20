@@ -15,12 +15,16 @@ import parcellation_methods as pm
 
 parser = argparse.ArgumentParser(description="Calculate the parcellation of\
                                  brain images")
-
+def temp_visualization(path):
+    mat = np.load(path)
+    plt.imshow(mat, aspect='auto', interpolation='none');
+    plt.show()
 # The available modalities
 modality_arr = ['Tracto_4D', 'Tracto_mat']
 sim_mat_arr = ['distance', 'covariance', 'correlation']
 mat_transform_arr = ['log2', 'zscore', 'log2_zscore', 'none']
 parcellation_method_arr = ['KMeans', 'PCA']
+rotation_arr = ['quartimax', 'varimax']
 
 # I need subcommands
 # https://docs.python.org/3/library/argparse.html#module-argparse
@@ -41,12 +45,14 @@ parser.add_argument("similarity_matrix", type=str,
                     choices=sim_mat_arr)
 parser.add_argument("-t", "--transform", type=str,
                     help="the transformation(s) to apply to the similarity \
-                    matrix", choices=mat_transform_arr, default='log2_zscore')
+                    matrix", choices=mat_transform_arr)
 sub_parsers = parser.add_subparsers(help='Choose the parcellation method',
                                     dest='parcellation_method')
 
 parser_PCA = sub_parsers.add_parser('PCA', help='Parcellate your data using \
                                     the PCA algorithm')
+parser_PCA.add_argument('-r', '--rotation', help='Select the factor rotation',
+                        type=str, default='quartimax', choices=rotation_arr)
 parser_KMeans = sub_parsers.add_parser('KMeans', help="Parcellate your data \
                                        using the KMeans algorithm")
 parser_KMeans.add_argument('num_clu', help='Choose the number of cluster you \
@@ -72,27 +78,32 @@ def memory_usage():
 
 
 
-def parcellate_obj(group, path, mod, transformation, sim_mat, method,
-                   K_nclu=None, seed_pref='', target_pref=''):
-
-    if group != None:
-        files_arr = [dir for dir in sorted(
-            os.listdir(path)) if dir != '_group_level']
-    else:
-        files_arr = [path]
+def parcellate_obj(files_arr, mod, transformation, sim_mat, method,
+                   param_parcellate, seed_pref='', target_pref=''):
 
     for dir in files_arr:
         if mod == 'Tracto_4D':
-            subj_obj = pa.Tracto_4D(path, group_level=False,
+            subj_obj = pa.Tracto_4D(dir, group_level=False,
                                     seed_pref=seed_pref,
                                     target_pref=target_pref)
-            mat_2D = subj_obj.co_mat_2D
+        elif mod == "Tracto_mat":
+            subj_obj = pa.Tracto_mat(dir, group_level=False,
+                                    seed_pref=seed_pref,
+                                    target_pref=target_pref)
         else:
             raise Exception(mod + " is not yet implemented")
 
+
+        mat_2D = subj_obj.co_mat_2D
+
         subj_obj.mat_transform(transformation, mat_2D)
         subj_obj.similarity(sim_mat, subj_obj.tr_mat_2D)
-        subj_obj.parcellate(method, subj_obj.sim_mat, K_nclu)
+        labels = subj_obj.parcellate(method, subj_obj.sim_mat, param_parcellate)
+
+        for el in subj_obj.temp_dict.values():
+            if os.path.exists(el):
+                print(el)
+                temp_visualization(el)
 
 
 # def parcellate_subj(path, mod, transformation, sim_mat, method,
@@ -244,14 +255,52 @@ def parcellate_obj(group, path, mod, transformation, sim_mat, method,
 
 # We launch the right function on the parameters
 print(args)
-if not ('num_clu' in args):
-    args.num_clu = None
-subj_labels = parcellate_obj(args.subject,
-                             args.group,
-                             args.modality,
-                             args.transform,
-                             args.similarity_matrix,
-                             args.parcellation_method,
-                             args.num_clu,
-                             args.seed_pref,
-                             args.target_pref)
+
+def filter_args(args):
+    path = args.subject
+    group = args.group
+
+    if group != None:
+        files_arr = [dir for dir in sorted(
+            os.listdir(path)) if dir != '_group_level']
+    else:
+        files_arr = [path]
+
+    mod = args.modality
+    tr = args.transform
+    sim = args.similarity_matrix
+    meth = args.parcellation_method
+    if 'rotation' in args:
+        param_parcellate = args.rotation
+    else:
+        param_parcellate = args.num_clu
+    seed = args.seed_pref
+    tar = args.target_pref
+
+    if tr == None:
+        if meth == 'PCA':
+            tr = 'log2_zscore'
+        else:
+            tr = 'log2'
+    if sim == None:
+        if meth == 'PCA':
+            sim = 'covariance'
+        else:
+            sim = 'correlation'
+            print("Ok it works")
+    return_arr = [files_arr, mod, tr, sim, meth, seed, tar]
+    return return_arr
+
+# The parcellation method will determine the default values of transformations
+# and similarity_matrix
+# subj_labels = parcellate_obj(args.subject,
+#                              args.group,
+#                              args.modality,
+#                              args.transform,
+#                              args.similarity_matrix,
+#                              args.parcellation_method,
+#                              param_parcellate,
+#                              args.seed_pref,
+#                              args.target_pref)
+
+subj_labels = parcellate_obj(*filter_args(args))

@@ -92,6 +92,8 @@ class Parcellobject(metaclass=abc.ABCMeta):
     """
 
     software_name = "Parcellotron"
+    seed_name = "seedROIs"
+    target_name = "targetMask"
 
     @abc.abstractmethod
     def __init__(self, subj_path, modality, group_level=False, seed_pref='',
@@ -113,6 +115,8 @@ class Parcellobject(metaclass=abc.ABCMeta):
         if not os.path.exists(self.res_dir):
             os.mkdir(self.res_dir)
 
+        self.temp_dict = self.init_temp_paths(self.res_dir)
+
         # We check if the input files needed exist and we store their paths
         self.in_dict = self.init_input_dict()
         assert self.verify_input_folder(self.input_dir), self.inputs_needed()
@@ -130,8 +134,10 @@ class Parcellobject(metaclass=abc.ABCMeta):
             folder does not exist
             """
 
-        self.init_seed_target_paths(self.seed_target_folder, self.seed_pref,
-                                    self.target_pref)
+        self.seed_path = ut.find_with_pref(
+            self.seed_target_folder, self.seed_pref, Parcellobject.seed_name)
+        self.target_path = ut.find_with_pref(
+            self.seed_target_folder, self.seed_pref, Parcellobject.target_name)
 
         # Create a map of correspondence among ROIs and voxels, where the ROI
         # order also reflects that of the (subsequent) rows of the connectivity
@@ -188,7 +194,7 @@ class Parcellobject(metaclass=abc.ABCMeta):
         modality type. The target and seed files will be handled in another
         function.
         """
-        assert hasattr(self, 'in_dict'), "self.in_dict wasn't initialized"
+        assert hasattr(self, 'in_dict'), "self.in_dict is not initialized"
         assert self.in_dict != {}, "self.in_dict is empty !"
         boo = True
         for k in self.in_dict.keys():
@@ -199,38 +205,27 @@ class Parcellobject(metaclass=abc.ABCMeta):
             boo = boo and (res != "")
         return boo
 
-    def init_seed_target_paths(self, folder, seed_pref="", target_pref=""):
-        """ Given a folder path, the function will search and initialize the
-        seed and target file path.
-        WARNING: if you give a pref that can be found in several files of the
-        type (seedROIs or targetMask), the function will throw an error.
+    def init_temp_paths(self, path):
+        """ Initialize the paths of temprorary_files and return a dictionary
+        with the paths associated with simple keys.
+
         Parameters
         ----------
-        folder : str
-            Path to the folder which should contain the seed and target files
-        seed_pref : str [optional]
-            prefix of the seed file
-        target_pref : str [optional]
-            prefix of the target file
+        path: str
+            the path of the folder which will contain the temprorary_files
+
+        Returns
+        -------
+        dd: dict
+            simple key associated with the path to the file
         """
-        if seed_pref == "":
-            seed_name = "seedROIs"
-        else:
-            if seed_pref.endswith("_"):
-                seed_name = seed_pref + "*seedROIs"
-            else:
-                seed_name = seed_pref + "*_seedROIs"
-
-        if target_pref == "":
-            target_name = "targetMask"
-        else:
-            if target_pref.endswith("_"):
-                target_name = target_pref + "*targetMask"
-            else:
-                target_name = target_pref + "*_targetMask"
-
-        self.seed_path = ut.find_in_filename(folder, seed_name)
-        self.target_path = ut.find_in_filename(folder, target_name)
+        dd = {'sim_mat_KMeans': os.path.join(
+                  path, self.out_pref + 'sim_mat_KMeans.npy'),
+              "ROI_clu_sort": os.path.join(
+                  path, self.out_pref + '"ROI_clu_sort".npy'),
+              'ROI_clu': os.path.join(
+                  path, self.out_pref + 'ROI_clu.npy')}
+        return dd
 
     # Tools
     def reset_outputs(self):
@@ -284,7 +279,7 @@ class Parcellobject(metaclass=abc.ABCMeta):
 
     def parcellate(self, option, sim_mat, KMeans_nclu=None):
         """ Perform the parcellation chosen on the matrix.
-        Paramters
+        Parameters
         ---------
         option: str ['KMeans', 'PCA']
             The name of the parcellation method
@@ -317,8 +312,8 @@ class Parcellobject(metaclass=abc.ABCMeta):
         Returns
         -------
         labels : np.array
-            Nseed labels (integers) which can be used to assign to each seed ROI the
-            value associated to a certain cluster
+            Nseed labels (integers) which can be used to assign to each seed
+            ROI the value associated to a certain cluster
         """
 
         labels = KMeans(n_clusters=nb_clu).fit_predict(sim_mat)
@@ -327,26 +322,30 @@ class Parcellobject(metaclass=abc.ABCMeta):
 
         similarity_matrix_reordered = sim_mat[IDX_CLU,:][:,IDX_CLU]
 
-        np.save(os.path.join(self.res_dir,
-                             self.out_pref + "KMeans_sim_mat.npy"),
-                similarity_matrix_reordered)
+        np.save(self.temp_dict["sim_mat_KMeans"], similarity_matrix_reordered)
 
         return labels
 
-    def parcellate_PCA(self, similarity_matrix):
+    def parcellate_PCA(self, similarity_matrix, rot='quartimax'):
         """ Parellate a 2D similarity matrix with the PCA algorithm
         Parameters
         ----------
         similarity_matrix : 2D np.array
             square similarity_matrix, e.g. correlation matrix
-            (It is assumed that the original 2D_connectivity_matrix was normalized
-            across ROIs)
+            (It is assumed that the original 2D_connectivity_matrix was
+            normalized across ROIs)
         Returns
         -------
         labels : np.array
-            Nseed labels (integers) which can be used to assign to each seed ROI the
-            value associated to a certain cluster
+            Nseed labels (integers) which can be used to assign to each seed
+            ROI the value associated to a certain cluster
         """
+        if rot == 'quartimax':
+            rotation = 0.0
+        elif rot == 'varimax':
+            rotation = 1.0
+        else:
+            raise Exception('This factor rotation type is not handled')
         sim_mat = similarity_matrix
         # Perform the first decomposition using svd
         # NB!!! In Python "v" is ALREADY TRANSPOSED, meaning that
@@ -362,7 +361,7 @@ class Parcellobject(metaclass=abc.ABCMeta):
         pc = pc[:,:]
 
         # Rotate the "v", i.e. the principal components
-        pc_rot = mt.rotate_components(pc, gamma = 0.0)
+        pc_rot = mt.rotate_components(pc, gamma = rotation)
 
         # Go back to the original orientation. CAREFUL: in the numpy
         # implementation, "v" is already rotated! (hence the name "vt")
@@ -398,7 +397,7 @@ class Parcellobject(metaclass=abc.ABCMeta):
         # Perform rotation of the eigenvectors/loadings
         # We need a matrix of pc in columns for the rotation, so we
         # take the transpose of the pca.components_ matrix
-        pc_rot = mt.rotate_components(pc.T, gamma = 0.0)
+        pc_rot = mt.rotate_components(pc.T, gamma = rotation)
 
 
         # Sort the clusters of ROIs and count the number of ROIs per clusters
@@ -418,8 +417,7 @@ class Parcellobject(metaclass=abc.ABCMeta):
             factor_idx = np.where(labels == i)
             ROI_clu[factor_idx, i] = 1
 
-        np.save(os.path.join(self.res_dir,
-                             self.out_pref + "ROI_clu.npy"), ROI_clu)
+        np.save(self.temp_dict['ROI_clu'], ROI_clu)
 
         # 'labels' is already the vector of cluster number for each ROI
         # Here we just visualize it as in SPSS
@@ -438,9 +436,7 @@ class Parcellobject(metaclass=abc.ABCMeta):
         idx_sort = np.argsort(labels)
         sim_mat_clusters = sim_mat[idx_sort,:][:,idx_sort]
 
-        np.save(os.path.join(self.res_dir,
-                             self.out_pref + "sim_mat_clusters.npy"),
-                sim_mat_clusters)
+        np.save(self.temp_dict["ROI_clu_sort"], ROI_clu_sort)
 
         return labels
 
@@ -582,7 +578,9 @@ class Tracto_mat(Parcellobject):
                          target_pref)
         # seed_mask will be used to create the seedROIs. This file can be
         # in the subject input folder or in the general group input folder
-        self.seed_mask
+        self.seed_mask = ut.find_with_pref(
+            self.seed_target_folder, self.seed_pref, 'seedMask')
+
 
     def init_input_dict(self):
         """ Fill input files substring to check and store input files path
@@ -638,6 +636,8 @@ class Tracto_mat(Parcellobject):
     def map_ROIs(self):
         if os.path.exists(self.seedROIs):
             return ut.read_ROIs_from_nifti(self.seedROIs)
+        else:
+            
 
 
         # Read seed_mask, target_mask and coord_for_fdt_matrix3
@@ -678,10 +678,17 @@ class Tracto_mat(Parcellobject):
         return fdt_matrix
 
     def get_mask_indices(self, mask_path):
-
-        datadir = bd + '/' + subj + '_' + hemi
-        mask_filename = datadir + '/' + maskname + '.nii.gz'
-
+        """ Retrieve the indices of the mask inside the coordinates matrix of
+        probtrackx
+        Parameters
+        ----------
+        mask_path: str
+            Path to the mask in nifti
+        Returns
+        -------
+        ind_mask:
+        coord_mask:
+        """
         # Load the coordinates of the voxels on the whole-brain ribbon.
         # The order of the coordinates in this text file is the same as the
         # rows in the fdt_matrix3.dot matrix.
