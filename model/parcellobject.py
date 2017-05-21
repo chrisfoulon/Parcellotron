@@ -32,18 +32,18 @@ class Parcellobject(metaclass=abc.ABCMeta):
         the name of the modality, it's automatically handled by the subclasses
     group_level: bool
         true if you want to do group level analysis
-    seed_pref : str [optional]
+    seed_pref: str [optional]
         prefix of the seed file
-    target_pref : str [optional]
+    target_pref: str [optional]
         prefix of the target file
 
     Attributes
     ----------
     modality: {'Tracto_4D', 'Tracto_mat', 'FMRI_4D'}
         Name of the modality
-    seed_pref : str [optional]
+    seed_pref: str [optional]
         prefix of the seed file
-    target_pref : str [optional]
+    target_pref: str [optional]
         prefix of the target file
     out_pref: str
         prefix used to defferentiate the outputs (temporary or not) between
@@ -76,16 +76,19 @@ class Parcellobject(metaclass=abc.ABCMeta):
         Path to the nifti 3D image of the target mask
     seed_target_folder: str
         Folder which contains the seed and the target files
-    seed_coord : np.array
+    seed_coord: np.array
         Index of the xyz coordinates of the voxels in each ROIs
-    ROIs_label : np.array
+    ROIs_label: np.array
         Create an index of the ROI associated with each row of the
         (subsequently) created 2D_connectivity_matrix
-    cmap2D_path : str
+    cmap2D_path: str
         Path to the python file where the connectivity matrix is or will be
         stored. If the matrix already exists, we won't compute it again
-    co_mat_2D : np.array
+    co_mat_2D: np.array
         The 2D connectivity matrix calculated from the data
+    final_shape: array
+        The shape of the seedROIs file
+    final_affine
 
     @Inheritance END
 
@@ -225,7 +228,12 @@ class Parcellobject(metaclass=abc.ABCMeta):
         return dd
 
     def set_final_shape(self):
-        self.final_shape = nib.load(self.seed_path).shape
+        """ Load the seedROIs file to store its shape and affine in object
+        attributes
+        """
+        nii = = nib.load(self.seed_path)
+        self.final_shape = nii.shape
+        self.final_affine = nii.affine
 
     # Tools
     def reset_outputs(self):
@@ -241,11 +249,7 @@ class Parcellobject(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def map_ROIs(self):
         pass
-
-    @abc.abstractmethod
-    def write_clusters(self):
-        pass
-
+        
     def mat_transform(self, option, mat):
         """ Calculate the chosen transformation on the matrix given
         Parameters
@@ -260,6 +264,8 @@ class Parcellobject(metaclass=abc.ABCMeta):
         if option in ['zscore', 'log2_zscore']:
             tr_mat_2D = mt.matrix_zscore(self.co_mat_2D)
         self.tr_mat_2D = tr_mat_2D
+
+        return self.tr_mat_2D
 
     def similarity(self, option, mat):
         """ Calculate the similarity matrix of the matrix given in parameters
@@ -277,7 +283,9 @@ class Parcellobject(metaclass=abc.ABCMeta):
             sim_mat = sm.similarity_distance(mat)
         self.sim_mat = sim_mat
 
-    def parcellate(self, option, sim_mat, KMeans_nclu=None):
+        return self.sim_mat
+
+    def parcellate(self, option, sim_mat, param_parcellate=None):
         """ Perform the parcellation chosen on the matrix.
         Parameters
         ---------
@@ -288,14 +296,22 @@ class Parcellobject(metaclass=abc.ABCMeta):
         KMeans_nclu: int [default: None]
             Number of clusters you want to find with the KMeans algorithm
         """
+        pref = option
+        self.out_pref += option + '_'
+        path_pref = os.path.join(self.res_dir, self.out_pref)
         if option == 'KMeans':
-            if KMeans_nclu != None:
-                labels = self.parcellate_KMeans(sim_mat, 10)
+            if param_parcellate != None:
+                labels = pm.parcellate_KMeans(sim_mat, param_parcellate,
+                                              path_pref)
             else:
                 raise Exception("""You need to define a number of cluster
                                 to use the KMeans algorithm""")
         elif option == 'PCA':
-            labels = self.parcellate_PCA(sim_mat)
+            if param_parcellate != None:
+                labels = pm.parcellate_PCA(sim_mat, param_parcellate, path_pref)
+            else:
+                raise Exception("""You need to define the rotation you want
+                                to to apply in the PCA algorithm""")
         else:
             raise Exception(option + " is not yet implemented")
 
@@ -303,144 +319,40 @@ class Parcellobject(metaclass=abc.ABCMeta):
 
         return self.labels
 
-    def parcellate_KMeans(self, sim_mat, nb_clu):
-        """ Parellate a 2D similarity matrix with the KMeans algorithm
-        Parameters
-        ----------
-        sim_mat : 2D np.array
-            square similarity_matrix, e.g. correlation matrix
-        nb_clu = int
-            desired number of clusters
-        Returns
-        -------
-        labels : np.array
-            Nseed labels (integers) which can be used to assign to each seed
-            ROI the value associated to a certain cluster
+    def write_clusters(self, shape, affine, ROIs_labels, labels, seed_coord,
+                       out_pref):
+        """ Write the clusters in a nifti 3D image where the voxels values are
+        the cluster labels
         """
+        # Create an empty volume to store the clusters
+        nii_mask = np.zeros(self.final_shape)
 
-        labels = KMeans(n_clusters=nb_clu).fit_predict(sim_mat)
-
-        IDX_CLU = np.argsort(labels)
-
-        similarity_matrix_reordered = sim_mat[IDX_CLU,:][:,IDX_CLU]
-
-        np.save(self.temp_dict["sim_mat_KMeans"], similarity_matrix_reordered)
-
-        return labels
-
-    def parcellate_PCA(self, similarity_matrix, rot='quartimax'):
-        """ Parellate a 2D similarity matrix with the PCA algorithm
-        Parameters
-        ----------
-        similarity_matrix : 2D np.array
-            square similarity_matrix, e.g. correlation matrix
-            (It is assumed that the original 2D_connectivity_matrix was
-            normalized across ROIs)
-        Returns
-        -------
-        labels : np.array
-            Nseed labels (integers) which can be used to assign to each seed
-            ROI the value associated to a certain cluster
-        """
-        if rot == 'quartimax':
-            rotation = 0.0
-        elif rot == 'varimax':
-            rotation = 1.0
-        else:
-            raise Exception('This factor rotation type is not handled')
-        sim_mat = similarity_matrix
-        # Perform the first decomposition using svd
-        # NB!!! In Python "v" is ALREADY TRANSPOSED, meaning that
-        # X = U * S * VT
-        u, s, vt = np.linalg.svd(sim_mat, full_matrices=True)
-
-        # Take the transpose of vt to operate on a matrix where
-        # eigenvectors/loadings are on the columns
-        pc = vt.T
-
-        # Here you can choose to consider only a subset of eigenvectors
-        # for rotation
-        pc = pc[:,:]
-
-        # Rotate the "v", i.e. the principal components
-        pc_rot = mt.rotate_components(pc, gamma = rotation)
-
-        # Go back to the original orientation. CAREFUL: in the numpy
-        # implementation, "v" is already rotated! (hence the name "vt")
-        vt_rot = pc_rot.T
-
-        # Calculate the eigenvalues after rotation
-        # NB: Since vt_rot is already transposed, and
-        #         Sigma = U' * X * V
-        # we need to multiply by vt_rot.T
-        s_rot = u.T.dot(sim_mat).dot(vt_rot.T)
-
-        # Return the eigenvalues of the rotated matrix according to
-        # the fact that the eigenvalues output by PCA are:
-        # eigvals = Sigma^2
-        eigvals_rot = np.diag(s_rot) ** 2
-        eigvals_rot_sorted = np.sort(eigvals_rot)
-        eigvals_rot_sorted_descending = eigvals_rot_sorted[::-1]
-
-        # Determine the number of components to consider, by
-        # fitting a power curve to the first 50 'rotate' eigenvalues
-        npc = mt.fit_power(eigvals_rot_sorted_descending)
-
-        print("We found " + str(npc) + " principal components")
-
-        # Perform the second decomposition, with a given number of components
-        pca = decomposition.PCA(n_components = npc)
-        pca.fit(sim_mat)
-
-        # Principal componets loadings (pc) and eigenvalues (eig_val)
-        pc = pca.components_
-        eig_val = pca.explained_variance_
-
-        # Perform rotation of the eigenvectors/loadings
-        # We need a matrix of pc in columns for the rotation, so we
-        # take the transpose of the pca.components_ matrix
-        pc_rot = mt.rotate_components(pc.T, gamma = rotation)
+        nvox = len(self.ROIs_labels)
+        # prepare a vector of length nvox-in-seed = len(ROIlabels), to store
+        # the cluster label for each voxel of the seed region
+        ind_clusters = np.zeros(nvox)
 
 
-        # Sort the clusters of ROIs and count the number of ROIs per clusters
-        abs_v = np.abs(pc_rot)
-        # plt.imshow(PCrot, aspect='auto');
-        # plt.show()
 
-        # Find the maximum loading for each ROI across principal components.
-        # In other words, find to which principal component / cluster each ROI
-        # should be assigned
-        labels = np.argmax(abs_v, axis=1)
+        # To label each voxel with the corresponding cluster value we need to:
+        # (1) retrieve the voxel index (2D matrix row) for each ROI
+        # (2) assign the same cluster value for all voxels in an ROI
+        for ith_ROI in np.arange(len(self.labels)):
+            ind_ith_clu = np.array(np.where(self.ROIs_labels == ith_ROI))  # (1)
+            ind_clusters[ind_ith_clu] = self.labels[ith_ROI] + 1 # (2)
 
-        ROI_clu = np.zeros(pc_rot.shape)
+        # We take the vector ind_clusters containing the cluster values
+        # for each voxel and we assign that value in the corresponding xyz
+        # coordinates
+        for jth_vox in np.arange(nvox):
+            vox = self.seed_coord[jth_vox,:].astype('int')
+            nii_mask[vox[0], vox[1], vox[2]] = ind_clusters[jth_vox]
 
-        # Display the assignment of each ROIs to its pc/cluster
-        for i in np.arange(npc):
-            factor_idx = np.where(labels == i)
-            ROI_clu[factor_idx, i] = 1
 
-        np.save(self.temp_dict['ROI_clu'], ROI_clu)
+        nii_cluster = nib.Nifti1Image(nii_mask, self.final_affine)
 
-        # 'labels' is already the vector of cluster number for each ROI
-        # Here we just visualize it as in SPSS
-        ROI_clu_sort = np.zeros(ROI_clu.shape)
-
-        start_row = 0
-
-        for i in np.arange(ROI_clu_sort.shape[1]):
-            tmp = np.where(ROI_clu[:,i])
-            nROIs_ith_clu = np.array(tmp).shape[1]
-            stop_row = start_row + nROIs_ith_clu
-            ROI_clu_sort[start_row : (nROIs_ith_clu + start_row),i] = 1
-            start_row = stop_row
-
-        # Show how clusters look like in the similarity_matrix
-        idx_sort = np.argsort(labels)
-        sim_mat_clusters = sim_mat[idx_sort,:][:,idx_sort]
-
-        np.save(self.temp_dict["ROI_clu_sort"], ROI_clu_sort)
-
-        return labels
+        self.clusters_img = os.path.join(self.out_pref + 'clusters.nii.gz')
+        nib.save(nii_cluster, self.clusters_img)
 
 
 class Tracto_4D(Parcellobject):
@@ -516,39 +428,6 @@ class Tracto_4D(Parcellobject):
     def map_ROIs(self):
         return ut.read_ROIs_from_nifti(self.seed_path)
 
-    def write_clusters(self):
-        """ Write the clusters in a nifti 3D image where the voxels values are
-        the cluster labels
-        """
-        # Create an empty volume to store the clusters
-        nii_mask = np.zeros(self.final_shape)
-
-        nvox = len(self.ROIs_labels)
-        # prepare a vector of length nvox-in-seed = len(ROIlabels), to store
-        # the cluster label for each voxel of the seed region
-        ind_clusters = np.zeros(nvox)
-
-
-
-        # To label each voxel with the corresponding cluster value we need to:
-        # (1) retrieve the voxel index (2D matrix row) for each ROI
-        # (2) assign the same cluster value for all voxels in an ROI
-        for ith_ROI in np.arange(len(self.labels)):
-            ind_ith_clu = np.array(np.where(self.ROIs_labels == ith_ROI))  # (1)
-            ind_clusters[ind_ith_clu] = self.labels[ith_ROI] + 1 # (2)
-
-        # We take the vector ind_clusters containing the cluster values for each voxel
-        # and we assign that value in the corresponding xyz coordinates
-        for jth_vox in np.arange(nvox):
-            vox = self.seed_coord[jth_vox,:].astype('int')
-            nii_mask[vox[0], vox[1], vox[2]] = ind_clusters[jth_vox]
-
-
-        img_cluster = nib.Nifti1Image(nii_mask, nii_image.affine)
-
-        cluster_filename = datadir + '/' + 'clusters.nii.gz'
-        nib.save(img_cluster, cluster_filename)
-
 
 class Tracto_mat(Parcellobject):
     """ Description
@@ -561,9 +440,9 @@ class Tracto_mat(Parcellobject):
     ----------
     in_names: dict
         Associate easier keys to the in_dict keys.
-        For instance : self.in_dict[self.in_names['fdt_matrix']]
+        For instance: self.in_dict[self.in_names['fdt_matrix']]
     """
-    def __init__(self, subj_path, ROI_size, group_level=False, seed_pref='',
+    def __init__(self, subj_path, ROIs_size, group_level=False, seed_pref='',
                  target_pref=''):
         super().__init__(subj_path, self.__class__.__name__, seed_pref,
                          target_pref)
@@ -571,6 +450,8 @@ class Tracto_mat(Parcellobject):
         # in the subject input folder or in the general group input folder
         self.seed_mask = ut.find_with_pref(
             self.seed_target_folder, self.seed_pref, 'seedMask')
+        self.ROIs_size = ROIs_size
+        self.out_pref += str(self.ROIs_size) + "_"
 
 
     def init_input_dict(self):
@@ -638,9 +519,9 @@ class Tracto_mat(Parcellobject):
         into the .npy file and return the np.array of its content.
         Returns
         -------
-        fdt_matrix : np.array
+        fdt_matrix: np.array
             The raw connectivity matrix in a python format.
-            The array contains 3 columns : x, y, value
+            The array contains 3 columns: x, y, value
         """
         fdt_dotmatrix_file = self.in_dict[self.in_names['fdt_matrix']]
         fdt_matrix_py_file = os.path.join(self.seed_target_folder,
@@ -654,8 +535,8 @@ class Tracto_mat(Parcellobject):
                   Python format...")
             # To know how much time it takes
 
-            fdt_dotmatrix_df = pd.read_csv(
-                fdt_dotmatrix_file, delim_whitespace=True)
+            fdt_dotmatrix_df = pd.read_csv(fdt_dotmatrix_file,
+                                           header=None, delim_whitespace=True)
             fdt_dotmatrix = fdt_dotmatrix_df.as_matrix()
             # save the matrix in binary format
             np.save(fdt_matrix_py_file, fdt_dotmatrix)
@@ -713,13 +594,18 @@ class Tracto_mat(Parcellobject):
         # commented below, using original np.arrays
         common_voxels = set(mask_set).intersection(coord_set)
 
-        # (4) Get the keys in the dictionary which correspond to the set of
-        # coordinates common to both mask and coord
-        ind_mask = sorted([ coord_dict[vox] for vox in common_voxels ])
 
-        coord_mask = coord[ind_mask, :]
+        mask_len = len(mask)
+        ind_mask = np.zeros(mask_len).astype('int')
+        for i in np.arange(mask_len):
+            ind_mask[i] = coord_dict[tuple(mask[i,:])]
 
-        return ind_mask, coord_mask
+        coord_mask = coord[ind_mask,:]
+        # If u want to test, use the following lines
+        # coord[ind_mask,:]
+        # mask
+
+        return ind_mask, coord_mask.astype('int')
 
 
 # %%
