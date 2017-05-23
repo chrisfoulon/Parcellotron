@@ -33,24 +33,23 @@ group = parser.add_mutually_exclusive_group()
 group.add_argument('-s', '--subject', type=str, help="the subject folder path")
 group.add_argument('-g', '--group', type=str,
                    help="the root folder path, containing the subject folders")
+group.add_argument('-lo', '--loop', type=str,
+                   help="the root folder path, containing the subject folders.\
+                   The parcellation will be performed on every subjects")
 # parser.add_argument("subj_path", type=str, help="the subject folder path")
 parser.add_argument("-sp", "--seed_pref", type=str,
                     help="A prefix to find a particular seedROIs/seedMask file")
 parser.add_argument("-tp", "--target_pref", type=str,
                     help="A prefix to find a particular targetMask file")
-# parser.add_argument("modality", type=str, help="the input modality",
-#                     choices=modality_arr)
+parser.add_argument("modality", type=str, help="the input modality",
+                    choices=modality_arr)
+parser.add_argument('-ROIs_size', type=int, default=64,
+                       help='The seed ROIs size in cubic millimeter (Only for \
+                       Tracto_mat)')
 
-parser_4D = sub_parsers.add_parser('-Tracto_4D',
-                                   help='Tractography in 4D format')
-parser_mat = sub_parsers.add_parser('-Tracto_mat',
-                                    help='Tractography in probtrackx matrix format')
-parser_mat.add_argument('ROIs_size', type=int,
-                       help='The size in cubic millimeters')
-
-parser.add_argument("similarity_matrix", type=str,
+parser.add_argument("-sim", "--similarity_matrix", type=str, dest="similarity_matrix",
                     help="type of similarity_matrix you want",
-                    choices=sim_mat_arr)
+                    choices=sim_mat_arr, default=None)
 parser.add_argument("-t", "--transform", type=str,
                     help="the transformation(s) to apply to the similarity \
                     matrix", choices=mat_transform_arr)
@@ -79,17 +78,17 @@ args = parser.parse_args()
 # Mettre la méthode the parcellisation avant la séléction de la transformation et de
 # la similarity. Distance matrix il faut le disable
 
-def parcellate_obj(files_arr, mod, size, transformation, sim_mat, method,
+def parcellate_obj(group_level, files_arr, mod, size, transformation, sim_mat, method,
                    param_parcellate, seed_pref='', target_pref=''):
-
+    print(group_level)
     for dir in files_arr:
         if mod == 'Tracto_4D':
-            subj_obj = pa.Tracto_4D(dir, size,
-                                    group_level=False,
+            subj_obj = pa.Tracto_4D(dir,
+                                    group_level=group_level,
                                     seed_pref=seed_pref,
                                     target_pref=target_pref)
         elif mod == "Tracto_mat":
-            subj_obj = pa.Tracto_mat(dir, group_level=False,
+            subj_obj = pa.Tracto_mat(dir, size, group_level=group_level,
                                     seed_pref=seed_pref,
                                     target_pref=target_pref)
         else:
@@ -106,20 +105,25 @@ def parcellate_obj(files_arr, mod, size, transformation, sim_mat, method,
             if os.path.exists(el):
                 print(el)
                 temp_visualization(el)
-We should create a third option 'loop' to just calculate the parcellation of every
-subjects of the root folder but don't perform any group level analysis on them. 
+
 # We launch the right function on the parameters
 print(args)
 
 def filter_args(args):
     path = args.subject
     group = args.group
-
+    loop = args.loop
     if group != None:
+        group_level = True
+    else:
+        group_level = False
+    if group != None or loop != None:
         files_arr = [dir for dir in sorted(
             os.listdir(path)) if dir != '_group_level']
-    else:
+    elif path != None:
         files_arr = [path]
+    else:
+        raise Exception("WTF ????")
     roisize = args.ROIs_size
     mod = args.modality
     tr = args.transform
@@ -143,7 +147,8 @@ def filter_args(args):
         else:
             sim = 'correlation'
             print("Ok it works")
-    return_arr = [files_arr, mod, roisize, tr, sim, meth, seed, tar]
+    return_arr = [group_level, files_arr, mod, roisize, tr, sim, meth,
+                  param_parcellate, seed, tar]
     return return_arr
 
 # The parcellation method will determine the default values of transformations

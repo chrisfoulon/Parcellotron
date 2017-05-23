@@ -231,7 +231,7 @@ class Parcellobject(metaclass=abc.ABCMeta):
         """ Load the seedROIs file to store its shape and affine in object
         attributes
         """
-        nii = = nib.load(self.seed_path)
+        nii = nib.load(self.seed_path)
         self.final_shape = nii.shape
         self.final_affine = nii.affine
 
@@ -249,7 +249,7 @@ class Parcellobject(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def map_ROIs(self):
         pass
-        
+
     def mat_transform(self, option, mat):
         """ Calculate the chosen transformation on the matrix given
         Parameters
@@ -299,21 +299,27 @@ class Parcellobject(metaclass=abc.ABCMeta):
         pref = option
         self.out_pref += option + '_'
         path_pref = os.path.join(self.res_dir, self.out_pref)
-        if option == 'KMeans':
-            if param_parcellate != None:
-                labels = pm.parcellate_KMeans(sim_mat, param_parcellate,
-                                              path_pref)
-            else:
-                raise Exception("""You need to define a number of cluster
-                                to use the KMeans algorithm""")
-        elif option == 'PCA':
-            if param_parcellate != None:
-                labels = pm.parcellate_PCA(sim_mat, param_parcellate, path_pref)
-            else:
-                raise Exception("""You need to define the rotation you want
-                                to to apply in the PCA algorithm""")
-        else:
-            raise Exception(option + " is not yet implemented")
+        print("ARGUMENTS : ")
+        print(param_parcellate)
+        if param_parcellate != None:
+            parceller = pm.Parceller(option, sim_mat, path_pref,
+                                     param_parcellate)
+            labels = parceller.labels
+        # if option == 'KMeans':
+        #     if param_parcellate != None:
+        #         labels = pm.parcellate_KMeans(sim_mat, param_parcellate,
+        #                                       path_pref)
+        #     else:
+        #         raise Exception("""You need to define a number of cluster
+        #                         to use the KMeans algorithm""")
+        # elif option == 'PCA':
+        #     if param_parcellate != None:
+        #         labels = pm.parcellate_PCA(sim_mat, param_parcellate, path_pref)
+        #     else:
+        #         raise Exception("""You need to define the rotation you want
+        #                         to to apply in the PCA algorithm""")
+        # else:
+        #     raise Exception(option + " is not yet implemented")
 
         self.labels = labels
 
@@ -505,7 +511,7 @@ class Tracto_mat(Parcellobject):
         if os.path.exists(self.seedROIs):
             return ut.read_ROIs_from_nifti(self.seedROIs)
         else:
-
+            pass
 
 
         # Read seed_mask, target_mask and coord_for_fdt_matrix3
