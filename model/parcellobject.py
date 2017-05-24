@@ -444,6 +444,10 @@ class Tracto_mat(Parcellobject):
 
     Attributes
     ----------
+    seed_mask: str
+        path to the mask of the seed (nifti file)
+    ROI_size: int
+        The ROIs' size
     in_names: dict
         Associate easier keys to the in_dict keys.
         For instance: self.in_dict[self.in_names['fdt_matrix']]
@@ -505,13 +509,61 @@ class Tracto_mat(Parcellobject):
         with the name: subj_2D_connectivity_matrix.npy
         """
         # Convert the omat3/fdt_matrix3.dot (whole brain) into npy
-        fdt_matrix = convert_dotbigmat(bd,subj,hemi)
+        fdt_matrix = convert_dotbigmat()
 
     def map_ROIs(self):
         if os.path.exists(self.seedROIs):
             return ut.read_ROIs_from_nifti(self.seedROIs)
         else:
-            pass
+            seed_ind, self.seed_coord = self.get_mask_indices(self.seed_mask)
+            nii = nib.load(self.in_dict[self.in_names['fdt_paths']])
+            nii_dims = nii.header.get_zooms()
+
+            voxel_volume = np.prod(nii_dims)
+            # voxel_volume = np.prod(np.diag(img.affine))  # alternative method
+            ribbon_volume = len(seed_coord) * voxel_volume
+            # number of clusters to create
+            k = int(math.floor(ribbon_volume / self.ROIsize))
+
+
+            print('There are ' + str(np.shape(seed_coord)[0]) +
+                  ' voxel for a total of ~' + str(ribbon_volume.astype('int')) +
+                  ' mm3')
+            print('One voxel is ' + str(round(voxel_volume,3)) + ' mm3')
+            print('With the chosen ROI size of ' + str(ROIsize) +
+                  ' mm3 there will be ' + str(k) + ' ROIs')
+            print(' ')
+            print('I need to create the seed ROIs.')
+            print('This might take some time for large seed regions...')
+
+            t0 = time.time()
+            ROIlabels = KMeans(n_clusters=k, n_init=10).fit_predict(
+                self.seed_coord)
+            t1 = time.time()
+            print("kmeans performed in %.3f s \n" % (t1 - t0))
+
+            # Create a nifti file with the ROIs
+
+            min(ROIlabels)
+            max(ROIlabels)
+
+            mask = np.zeros(nii.get_data().shape)
+            for i in np.arange(k):
+                ind = np.where(ROIlabels==i)
+                mask[seed_coord[ind,0],
+                     seed_coord[ind,1], seed_coord[ind,2]] = i + 1
+
+            img_ROIs = nib.Nifti1Image(mask, nii.affine)
+            img_ROIs_filename = self.seedROIs
+
+            nib.save(img_ROIs, img_ROIs_filename)
+
+
+            np.savez(ROIfile, ROIlabels=ROIlabels)
+            print('I created' + ROIfile + ' for you');
+            print('The ROIlabels are ordered as the rows of seed_coord')
+
+            return ROIlabels
 
 
         # Read seed_mask, target_mask and coord_for_fdt_matrix3
@@ -531,7 +583,7 @@ class Tracto_mat(Parcellobject):
         """
         fdt_dotmatrix_file = self.in_dict[self.in_names['fdt_matrix']]
         fdt_matrix_py_file = os.path.join(self.seed_target_folder,
-                                          'fdt_matrix.npy')
+                                          self.out_pref + 'fdt_matrix.npy')
 
         if os.path.exists(fdt_matrix_py_file):
             fdt_matrix = np.load(fdt_matrix_py_file)

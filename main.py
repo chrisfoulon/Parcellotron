@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
+import sys
 
 from PyQt5.QtWidgets import (QStyleFactory, QApplication)
 
+import view.main_frame as mf
+
 if __name__ == '__main__':
-    import sys
-    import view.main_frame as mf
 
     app = QApplication(sys.argv)
     app.setStyle(QStyleFactory.create("fusion"))

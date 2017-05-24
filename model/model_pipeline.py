@@ -15,13 +15,10 @@ import parcellation_methods as pm
 
 parser = argparse.ArgumentParser(description="Calculate the parcellation of\
                                  brain images")
-def temp_visualization(path):
-    mat = np.load(path)
-    plt.imshow(mat, aspect='auto', interpolation='none');
-    plt.show()
+
 # The available modalities
 modality_arr = ['Tracto_4D', 'Tracto_mat']
-sim_mat_arr = ['distance', 'covariance', 'correlation']
+sim_mat_arr = ['covariance', 'correlation']
 mat_transform_arr = ['log2', 'zscore', 'log2_zscore', 'none']
 parcellation_method_arr = ['KMeans', 'PCA']
 rotation_arr = ['quartimax', 'varimax']
@@ -47,15 +44,6 @@ parser.add_argument('-ROIs_size', type=int, default=64,
                        help='The seed ROIs size in cubic millimeter (Only for \
                        Tracto_mat)')
 
-parser.add_argument("-sim", "--similarity_matrix", type=str, dest="similarity_matrix",
-                    help="type of similarity_matrix you want",
-                    choices=sim_mat_arr, default=None)
-parser.add_argument("-t", "--transform", type=str,
-                    help="the transformation(s) to apply to the similarity \
-                    matrix", choices=mat_transform_arr)
-sub_parsers = parser.add_subparsers(help='Choose the parcellation method',
-                                    dest='parcellation_method')
-
 parser_PCA = sub_parsers.add_parser('PCA', help='Parcellate your data using \
                                     the PCA algorithm')
 parser_PCA.add_argument('-r', '--rotation', help='Select the factor rotation',
@@ -64,6 +52,17 @@ parser_KMeans = sub_parsers.add_parser('KMeans', help="Parcellate your data \
                                        using the KMeans algorithm")
 parser_KMeans.add_argument('num_clu', help='Choose the number of cluster you \
                            want to find with the KMeans', type=int)
+
+parser.add_argument("-sim", "--similarity_matrix", type=str,
+                    dest="similarity_matrix",
+                    help="type of similarity_matrix you want",
+                    choices=sim_mat_arr, default=None)
+parser.add_argument("-t", "--transform", type=str,
+                    help="the transformation(s) to apply to the similarity \
+                    matrix", choices=mat_transform_arr)
+sub_parsers = parser.add_subparsers(help='Choose the parcellation method',
+                                    dest='parcellation_method')
+
 # parser.add_argument("parcellation_method", type=str,
 #                     help="the parcellation methods to use",
 #                     choices=parcellation_method_arr)
@@ -78,9 +77,9 @@ args = parser.parse_args()
 # Mettre la méthode the parcellisation avant la séléction de la transformation et de
 # la similarity. Distance matrix il faut le disable
 
-def parcellate_obj(group_level, files_arr, mod, size, transformation, sim_mat, method,
-                   param_parcellate, seed_pref='', target_pref=''):
-    print(group_level)
+def parcellate_obj(group_level, files_arr, mod, size, transformation,
+                   sim_mat, method, param_parcellate, seed_pref='',
+                   target_pref=''):
     for dir in files_arr:
         if mod == 'Tracto_4D':
             subj_obj = pa.Tracto_4D(dir,
@@ -100,11 +99,6 @@ def parcellate_obj(group_level, files_arr, mod, size, transformation, sim_mat, m
         subj_obj.mat_transform(transformation, mat_2D)
         subj_obj.similarity(sim_mat, subj_obj.tr_mat_2D)
         labels = subj_obj.parcellate(method, subj_obj.sim_mat, param_parcellate)
-
-        for el in subj_obj.temp_dict.values():
-            if os.path.exists(el):
-                print(el)
-                temp_visualization(el)
 
 # We launch the right function on the parameters
 print(args)

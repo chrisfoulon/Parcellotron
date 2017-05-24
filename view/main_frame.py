@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
+import sys
+
 from PyQt5.QtCore import Qt, QSize
 from PyQt5.QtGui import QIcon, QFont, QPixmap
 # I know I know ...
 from PyQt5.QtWidgets import *
+
 
 class MainFrame(QMainWindow):
     """ Main parcellation frame
@@ -29,21 +32,19 @@ class MainFrame(QMainWindow):
         self.tab1 = QWidget()
         self.tab2 = QWidget()
 
-        self.statusBar()
 
         menubar = self.menuBar()
         fileMenu = menubar.addMenu('&Menu')
         fileMenu.addAction(exitAction)
 
-        listWidget = QComboBox()
+        # Tab 1: Files parameters
 
-        #Resize width and height
-        listWidget.resize(50,120)
+        self.modality_list = QComboBox()
 
-        listWidget.addItem("Tractography 4D");
-        listWidget.addItem("Tractography matrix");
-        # listWidget.addItem("Item 3");
-        # listWidget.addItem("Item 4");
+        self.modality_list.addItem("Tractography 4D")
+        self.modality_list.addItem("Tractography matrix")
+        # self.modality_list.addItem("Item 3");
+        # self.modality_list.addItem("Item 4");
 
         self.root = QRadioButton("Root folder")
         self.root.setChecked(True)
@@ -71,19 +72,7 @@ class MainFrame(QMainWindow):
         grid.addWidget(target_lbl, 4, 1)
         grid.addWidget(self.target_fld, 5, 1)
         grid.addWidget(QLabel("Select the modality:"), 6, 0)
-        grid.addWidget(listWidget, 7, 0)
-
-        # root_lay = QHBoxLayout()
-        # root_lay.addWidget(self.root)
-        # root_lay.addWidget(self.group_check)
-        #
-        # plus_bro_lay = QVBoxLayout()
-        # plus_bro_lay.addLayout(root_lay)
-        # plus_bro_lay.addWidget(self.root_bro)
-        #
-        # radio_lay = QVBoxLayout()
-        # radio_lay.addLayout(root_lay)
-        # radio_lay.addWidget(self.subj)
+        grid.addWidget(self.modality_list, 7, 0)
 
         vBoxlayout = QVBoxLayout()
         vBoxlayout.addLayout(grid)
@@ -91,13 +80,56 @@ class MainFrame(QMainWindow):
 
         self.tab1.setLayout(vBoxlayout)
 
+        # Tab 2 : Parcellation parameters
+
+        self.roisize_lbl = QLabel("Select the size of the labels")
+        self.roisize_fld = QLineEdit()
+
+        self.transform_list = QComboBox()
+        self.transform_list.addItem("log2")
+        self.transform_list.addItem("zscore")
+        self.transform_list.addItem("log2_zscore")
+        self.transform_list.addItem("none")
+
+        self.sim_list = QComboBox()
+        self.sim_list.addItem("covariance")
+        self.sim_list.addItem("corelation")
+
+
+        self.met_list = QComboBox()
+        self.met_list.addItem("PCA")
+        self.met_list.addItem("KMeans")
+
+        # Option / parameter for each method
+        self.rotation_lbl = QLabel("Select the factor rotation for the PCA:")
+        self.rotation_fld = QLineEdit()
+
+        self.nclu_lbl = QLabel("Select the number of clusters:")
+        self.nclu_fld = QLineEdit()
+        vBox2 = QVBoxLayout()
+        grid2 = QGridLayout()
+        grid2.addWidget(self.roisize_lbl, 0, 0)
+        grid2.addWidget(self.roisize_fld, 1, 0)
+        grid2.addWidget(self.transform_list, 2, 0)
+        grid2.addWidget(self.sim_list, 3, 0)
+        grid2.addWidget(self.met_list, 4, 0)
+
+        grid2.addWidget(QLabel(), 0, 1)
+        vBox2.addLayout(grid2)
+        vBox2.addStretch(1)
+        self.tab2.setLayout(vBox2)
+
         self.tabs.addTab(self.tab1,"Files")
         self.tabs.addTab(self.tab2,"Parcellation")
         self.setCentralWidget(self.tabs)
         self.setWindowTitle(self.title)
         self.setGeometry(self.left, self.top, self.width, self.height)
 
-        self.statusBar().showMessage('Not all parameters have been set')
+        self.statusBar = QStatusBar()
+        self.setStatusBar(self.statusBar)
+        # self.statusBar().showMessage('Not all parameters have been set')
+        self.statusBar.addWidget(QLabel('Not all parameters have been set'), 1)
+        self.statusBar.addWidget(QLabel('Another label'))
         self.show()
 
 
