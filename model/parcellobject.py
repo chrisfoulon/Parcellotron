@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+y# -*- coding: utf-8 -*-
 
 import os
 import glob
@@ -512,6 +512,7 @@ class Tracto_mat(Parcellobject):
         fdt_matrix = convert_dotbigmat()
 
     def map_ROIs(self):
+        self.seedROIs = os.path.join(self.seed_target_folder)
         if os.path.exists(self.seedROIs):
             return ut.read_ROIs_from_nifti(self.seedROIs)
         else:
