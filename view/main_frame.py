@@ -82,7 +82,7 @@ class MainFrame(QMainWindow):
 
         # Tab 2 : Parcellation parameters
 
-        self.roisize_lbl = QLabel("Select the size of the labels")
+        self.roisize_lbl = QLabel("Select the size of the ROIs")
         self.roisize_fld = QLineEdit()
 
         self.transform_list = QComboBox()
@@ -99,22 +99,33 @@ class MainFrame(QMainWindow):
         self.met_list = QComboBox()
         self.met_list.addItem("PCA")
         self.met_list.addItem("KMeans")
+        self.met_list.currentIndexChanged.connect(self.draw_algo_param)
 
         # Option / parameter for each method
-        self.rotation_lbl = QLabel("Select the factor rotation for the PCA:")
+        self.rotation_lay = QVBoxLayout()
+        self.rotation_lay.addWidget(
+            QLabel("Select the factor rotation for the PCA:"))
         self.rotation_fld = QLineEdit()
+        self.rotation_lay.addWidget(self.rotation_fld)
 
-        self.nclu_lbl = QLabel("Select the number of clusters:")
+        self.nclu_lay = QVBoxLayout()
+        self.nclu_lay.addWidget(QLabel("Select the number of clusters:"))
         self.nclu_fld = QLineEdit()
+        self.nclu_lay.addWidget(self.nclu_fld)
+
+        self.met_param_lay = QGridLayout()
+        self.met_param_lay.addWidget(self.met_list)
+        # self.met_param_lay.addLayout(rotation_lay)
+        self.draw_algo_param()
         vBox2 = QVBoxLayout()
         grid2 = QGridLayout()
-        grid2.addWidget(self.roisize_lbl, 0, 0)
-        grid2.addWidget(self.roisize_fld, 1, 0)
-        grid2.addWidget(self.transform_list, 2, 0)
-        grid2.addWidget(self.sim_list, 3, 0)
-        grid2.addWidget(self.met_list, 4, 0)
+        # grid2.addWidget(self.met_list, 0, 0)
+        grid2.addLayout(self.met_param_lay, 0, 0)
+        grid2.addWidget(self.roisize_lbl, 2, 0)
+        grid2.addWidget(self.roisize_fld, 3, 0)
+        grid2.addWidget(self.transform_list, 4, 0)
+        grid2.addWidget(self.sim_list, 5, 0)
 
-        grid2.addWidget(QLabel(), 0, 1)
         vBox2.addLayout(grid2)
         vBox2.addStretch(1)
         self.tab2.setLayout(vBox2)
@@ -140,6 +151,17 @@ class MainFrame(QMainWindow):
         qr.moveCenter(cp)
         self.move(qr.topLeft())
 
+    def draw_algo_param(self):
+        print(self.met_list.currentText())
+        if self.met_list.currentText() == "PCA":
+            self.met_param_lay.removeItem(self.nclu_lay)
+            self.met_param_lay.addItem(self.rotation_lay)
+        if self.met_list.currentText() == "KMeans":
+            self.met_param_lay.removeItem(self.rotation_lay)
+            self.met_param_lay.addItem(self.nclu_lay)
+        self.met_param_lay.update()
+
+
 class BrowseWidget(QWidget):
     """
     class BrowseWidget
@@ -150,8 +172,8 @@ class BrowseWidget(QWidget):
         -"xls" pour un fichier .xls
     """
 
-    def __init__(self, parent=None, mode="dir", label="", wid=200,
-                 hei=40, defDir="",):
+    def __init__(self, parent=None, mode="dir", label="", wid=0,
+                 hei=0, defDir=""):
         super(BrowseWidget, self).__init__(parent)
         # mode
         self.mode = mode
@@ -173,11 +195,11 @@ class BrowseWidget(QWidget):
         # Les composants
         self.fld = QLineEdit(self)
         self.but = QPushButton()
-        Icon = QPixmap("lil_folder.png")
+        Icon = QPixmap("view/lil_folder.png")
         # On agrandi l'icone pour ensuite resize pour enlever les bordures
         # récalcitrantes
-        self.but.setIconSize(QSize(30,30))
-        self.but.setFixedSize(24,24)
+        self.but.setIconSize(QSize(30, 30))
+        self.but.setFixedSize(24, 24)
         self.but.setIcon(QIcon(Icon))
 
         # Placement des composant dans la layout du widget
@@ -190,7 +212,11 @@ class BrowseWidget(QWidget):
 
         self.setLayout(self.lay)
         #On fixe la taille du Widget entier
-        self.setFixedSize(wid, hei)
+        if wid != 0:
+            self.setFixedWidth(wid)
+        if hei != 0:
+            self.setFixedHeight(hei)
+        # self.setFixedSize(wid, hei)
 
         # Partie interaction
 

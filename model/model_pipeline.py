@@ -44,6 +44,8 @@ parser.add_argument('-ROIs_size', type=int, default=64,
                        help='The seed ROIs size in cubic millimeter (Only for \
                        Tracto_mat)')
 
+sub_parsers = parser.add_subparsers(help='Choose the parcellation method',
+                                    dest='parcellation_method')
 parser_PCA = sub_parsers.add_parser('PCA', help='Parcellate your data using \
                                     the PCA algorithm')
 parser_PCA.add_argument('-r', '--rotation', help='Select the factor rotation',
@@ -60,8 +62,6 @@ parser.add_argument("-sim", "--similarity_matrix", type=str,
 parser.add_argument("-t", "--transform", type=str,
                     help="the transformation(s) to apply to the similarity \
                     matrix", choices=mat_transform_arr)
-sub_parsers = parser.add_subparsers(help='Choose the parcellation method',
-                                    dest='parcellation_method')
 
 # parser.add_argument("parcellation_method", type=str,
 #                     help="the parcellation methods to use",
