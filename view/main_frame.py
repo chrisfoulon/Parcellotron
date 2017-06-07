@@ -6,6 +6,8 @@ from PyQt5.QtGui import QIcon, QFont, QPixmap
 # I know I know ...
 from PyQt5.QtWidgets import *
 
+import model.model_pipeline
+
 
 class MainFrame(QMainWindow):
     """ Main parcellation frame

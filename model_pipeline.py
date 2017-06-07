@@ -8,10 +8,10 @@ import os
 from sklearn.cluster import KMeans
 import matplotlib.pyplot as plt
 
-import parcellobject as pa
-import matrix_transformations as mt
-import similarity_matrices as sm
-import parcellation_methods as pm
+import model.parcellobject as pa
+import model.matrix_transformations as mt
+import model.similarity_matrices as sm
+import model.parcellation_methods as pm
 
 parser = argparse.ArgumentParser(description="Calculate the parcellation of\
                                  brain images")

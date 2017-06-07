@@ -2,8 +2,10 @@
 
 import os
 import glob
-import nibabel as nib
 import numpy as np
+
+import nibabel as nib
+
 
 def format_pref(pref):
     """ Return a prefix in a common shape, i.e. remove the underscore at the

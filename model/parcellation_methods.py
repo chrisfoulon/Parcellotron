@@ -1,28 +1,30 @@
 # -*- coding: utf-8 -*-
+import numpy as np
 
 from sklearn.cluster import KMeans
 from sklearn import decomposition
-import numpy as np
-import matrix_transformations as mt
+
+import model.matrix_transformations as mt
+
 
 class Parceller():
     handled_methods = ['PCA', 'KMeans']
     rotation_PCA = ['quartimax', 'varimax']
     def __init__(self, method, sim_mat, out_path, param):
-        assert(method in Parceller.handled_methods,
-               "The method: " + method + " is not handled")
+        assert method in Parceller.handled_methods,\
+               "The method: " + method + " is not handled"
         self.method = method
         self.out_path = out_path
         if method == "PCA":
-            assert(param in Parceller.rotation_PCA,
-                "Wrong rotation parameter: " + str(param))
+            assert param in Parceller.rotation_PCA,\
+                "Wrong rotation parameter: " + str(param)
             self.temp_files = [self.out_path + "ROI_clu.npy",
                                self.out_path + "ROI_clu_sort.npy"]
             self.param = param
             self.labels = self.parcellate_PCA(sim_mat, self.out_path, self.param)
 
         if method == "KMeans":
-            assert(type(param) == 'int', "The number of cluster must be an int")
+            assert type(param) == 'int', "The number of cluster must be an int"
             self.temp_files = [self.out_path + "sim_mat_KMeans.npy"]
             self.param = param
             self.labels = self.parcellate_KMeans(sim_mat, self.out_path, self.param)

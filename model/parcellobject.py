@@ -13,10 +13,10 @@ import nibabel as nib
 from sklearn.cluster import KMeans
 from sklearn import decomposition
 
-import utils as ut
-import matrix_transformations as mt
-import similarity_matrices as sm
-import parcellation_methods as pm
+import model.utils as ut
+import model.matrix_transformations as mt
+import model.similarity_matrices as sm
+import model.parcellation_methods as pm
 
 
 class Parcellobject(metaclass=abc.ABCMeta):
