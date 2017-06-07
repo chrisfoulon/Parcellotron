@@ -299,8 +299,6 @@ class Parcellobject(metaclass=abc.ABCMeta):
         pref = option
         self.out_pref += option + '_'
         path_pref = os.path.join(self.res_dir, self.out_pref)
-        print("ARGUMENTS : ")
-        print(param_parcellate)
         if param_parcellate != None:
             parceller = pm.Parceller(option, sim_mat, path_pref,
                                      param_parcellate)

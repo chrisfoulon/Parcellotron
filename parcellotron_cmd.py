@@ -34,9 +34,9 @@ group.add_argument('-lo', '--loop', type=str,
                    help="the root folder path, containing the subject folders.\
                    The parcellation will be performed on every subjects")
 # parser.add_argument("subj_path", type=str, help="the subject folder path")
-parser.add_argument("-sp", "--seed_pref", type=str,
+parser.add_argument("-sp", "--seed_pref", type=str, default='',
                     help="A prefix to find a particular seedROIs/seedMask file")
-parser.add_argument("-tp", "--target_pref", type=str,
+parser.add_argument("-tp", "--target_pref", type=str, default='',
                     help="A prefix to find a particular targetMask file")
 parser.add_argument("modality", type=str, help="the input modality",
                     choices=modality_arr)
@@ -99,6 +99,7 @@ def parcellate_obj(group_level, files_arr, mod, size, transformation,
         subj_obj.mat_transform(transformation, mat_2D)
         subj_obj.similarity(sim_mat, subj_obj.tr_mat_2D)
         labels = subj_obj.parcellate(method, subj_obj.sim_mat, param_parcellate)
+        print("FINISHED !")
 
 # We launch the right function on the parameters
 print(args)
@@ -117,7 +118,7 @@ def filter_args(args):
     elif path != None:
         files_arr = [path]
     else:
-        raise Exception("WTF ????")
+        raise Exception("file structure option unkown")
     roisize = args.ROIs_size
     mod = args.modality
     tr = args.transform
@@ -126,7 +127,7 @@ def filter_args(args):
     if 'rotation' in args:
         param_parcellate = args.rotation
     else:
-        param_parcellate = args.num_clu
+        param_parcellate = int(args.num_clu)
     seed = args.seed_pref
     tar = args.target_pref
 
@@ -140,7 +141,6 @@ def filter_args(args):
             sim = 'covariance'
         else:
             sim = 'correlation'
-            print("Ok it works")
     return_arr = [group_level, files_arr, mod, roisize, tr, sim, meth,
                   param_parcellate, seed, tar]
     return return_arr

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import sys
+import subprocess
 
 from PyQt5.QtCore import Qt, QSize
 from PyQt5.QtGui import QIcon, QFont, QPixmap
@@ -64,9 +65,9 @@ class MainFrame(QMainWindow):
         grid = QGridLayout()
         grid.addWidget(self.root, 0, 0)
         grid.addWidget(self.group_check, 0, 1)
-        grid.addWidget(self.root_bro, 1, 0)
+        grid.addWidget(self.root_bro, 1, 0, 1, 2)
         grid.addWidget(self.subj, 2, 0)
-        grid.addWidget(self.subj_bro, 3, 0)
+        grid.addWidget(self.subj_bro, 3, 0, 1, 2)
         grid.addWidget(seed_lbl, 4, 0)
         grid.addWidget(self.seed_fld, 5, 0)
         grid.addWidget(target_lbl, 4, 1)
@@ -93,41 +94,69 @@ class MainFrame(QMainWindow):
 
         self.sim_list = QComboBox()
         self.sim_list.addItem("covariance")
-        self.sim_list.addItem("corelation")
+        self.sim_list.addItem("correlation")
 
+        met_lay = QVBoxLayout()
 
         self.met_list = QComboBox()
         self.met_list.addItem("PCA")
         self.met_list.addItem("KMeans")
         self.met_list.currentIndexChanged.connect(self.draw_algo_param)
 
+        met_lay.addWidget(QLabel("Select parcellation method:"))
+        met_lay.addWidget(self.met_list)
+        met_lay.addStretch(1)
+
         # Option / parameter for each method
-        self.rotation_lay = QVBoxLayout()
-        self.rotation_lay.addWidget(
+        self.rotation = QWidget()
+        self.nclu = QWidget()
+
+        rotation_lay = QVBoxLayout()
+        rotation_lay.addWidget(
             QLabel("Select the factor rotation for the PCA:"))
-        self.rotation_fld = QLineEdit()
-        self.rotation_lay.addWidget(self.rotation_fld)
+        self.rotation_list = QComboBox()
+        self.rotation_list.addItem("quartimax")
+        self.rotation_list.addItem("varimax")
+        rotation_lay.addWidget(self.rotation_list)
+        rotation_lay.addStretch(1)
+        self.rotation.setLayout(rotation_lay)
 
-        self.nclu_lay = QVBoxLayout()
-        self.nclu_lay.addWidget(QLabel("Select the number of clusters:"))
+        nclu_lay = QVBoxLayout()
+        nclu_lay.addWidget(QLabel("Select the number of clusters:"))
         self.nclu_fld = QLineEdit()
-        self.nclu_lay.addWidget(self.nclu_fld)
+        nclu_lay.addWidget(self.nclu_fld)
+        nclu_lay.addStretch(1)
+        self.nclu.setLayout(nclu_lay)
 
-        self.met_param_lay = QGridLayout()
-        self.met_param_lay.addWidget(self.met_list)
+        self.met_param_lay = QStackedLayout()
+        self.met_param_lay.addWidget(self.rotation)
+        self.met_param_lay.addWidget(self.nclu)
+
+        self.run_button = QPushButton("RUN")
+        self.run_button.clicked.connect(self.run)
         # self.met_param_lay.addLayout(rotation_lay)
-        self.draw_algo_param()
         vBox2 = QVBoxLayout()
         grid2 = QGridLayout()
-        # grid2.addWidget(self.met_list, 0, 0)
-        grid2.addLayout(self.met_param_lay, 0, 0)
+        grid2.addLayout(met_lay, 0, 0)
+        grid2.addLayout(self.met_param_lay, 0, 1)
         grid2.addWidget(self.roisize_lbl, 2, 0)
         grid2.addWidget(self.roisize_fld, 3, 0)
-        grid2.addWidget(self.transform_list, 4, 0)
+        grid2.addWidget(QLabel("Select the type of similarity matrix:"), 4, 0)
         grid2.addWidget(self.sim_list, 5, 0)
+        grid2.addWidget(QLabel("Select connectivity matrix tranformation:"),
+                        6, 0)
+        grid2.addWidget(self.transform_list, 7, 0)
+
+        run_box = QHBoxLayout()
+        run_sub_box = QVBoxLayout()
+        run_sub_box.addWidget(self.run_button)
+        run_sub_box.addStretch(1)
+        run_box.addLayout(run_sub_box)
+        run_box.addStretch(1)
 
         vBox2.addLayout(grid2)
         vBox2.addStretch(1)
+        vBox2.addLayout(run_box)
         self.tab2.setLayout(vBox2)
 
         self.tabs.addTab(self.tab1,"Files")
@@ -152,14 +181,47 @@ class MainFrame(QMainWindow):
         self.move(qr.topLeft())
 
     def draw_algo_param(self):
-        print(self.met_list.currentText())
-        if self.met_list.currentText() == "PCA":
-            self.met_param_lay.removeItem(self.nclu_lay)
-            self.met_param_lay.addItem(self.rotation_lay)
-        if self.met_list.currentText() == "KMeans":
-            self.met_param_lay.removeItem(self.rotation_lay)
-            self.met_param_lay.addItem(self.nclu_lay)
-        self.met_param_lay.update()
+        self.met_param_lay.setCurrentIndex(self.met_list.currentIndex())
+
+    def build_param(self):
+        self.param = " "
+        # File structure selection
+        if self.root.isChecked():
+            if self.group_check.isChecked():
+                self.param += "-g "
+            else:
+                self.param += "-lo "
+            self.param += self.root_bro.getText() + " "
+        else:
+            self.param += "-s "
+            self.param += self.subj_bro.getText() + " "
+        seed_pref = self.seed_fld.text()
+        print(seed_pref)
+        if seed_pref != "":
+            self.param += "-sp " + seed_pref + " "
+        target_pref = self.target_fld.text()
+        if target_pref != "":
+            self.param += "-tp " + target_pref + " "
+        if self.modality_list.currentIndex() == 0:
+            self.param += "Tracto_4D "
+        if self.modality_list.currentIndex() == 1:
+            self.param += "Tracto_mat "
+            self.param += "-ROIs_size " + self.roisize_fld.text()
+        self.param += "-sim " + self.sim_list.currentText() + " "
+        self.param += "-t " + self.transform_list.currentText() + " "
+        met = self.met_list.currentText()
+        self.param += met + " "
+        if met == "PCA":
+            self.param += "-r " + self.rotation_list.currentText()
+        if met == "KMeans":
+            self.param += self.nclu_fld.text()
+
+    def run(self):
+        self.build_param()
+        print("Param string: " + self.param)
+        cmd = "python3 parcellotron_cmd.py "
+        args = self.param
+        subprocess.call(cmd + args, shell=True)
 
 
 class BrowseWidget(QWidget):

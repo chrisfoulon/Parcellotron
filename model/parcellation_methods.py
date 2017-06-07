@@ -24,7 +24,7 @@ class Parceller():
             self.labels = self.parcellate_PCA(sim_mat, self.out_path, self.param)
 
         if method == "KMeans":
-            assert type(param) == 'int', "The number of cluster must be an int"
+            assert type(param) is int, "The number of cluster must be an int"
             self.temp_files = [self.out_path + "sim_mat_KMeans.npy"]
             self.param = param
             self.labels = self.parcellate_KMeans(sim_mat, self.out_path, self.param)
@@ -46,7 +46,6 @@ class Parceller():
             Nseed labels (integers) which can be used to assign to each seed
             ROI the value associated to a certain cluster
         """
-
         labels = KMeans(n_clusters=nb_clu).fit_predict(sim_mat)
 
         IDX_CLU = np.argsort(labels)
