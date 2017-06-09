@@ -7,11 +7,13 @@ import textwrap
 import abc
 import numpy as np
 import collections
+import math
 
 import pandas as pd
 import nibabel as nib
 from sklearn.cluster import KMeans
 from sklearn import decomposition
+from scipy import sparse
 
 import model.utils as ut
 import model.matrix_transformations as mt
@@ -138,8 +140,6 @@ class Parcellobject(metaclass=abc.ABCMeta):
             folder does not exist
             """
 
-        self.seed_path = ut.find_with_pref(
-            self.seed_target_folder, self.seed_pref, Parcellobject.seed_name)
         self.target_path = ut.find_with_pref(
             self.seed_target_folder, self.seed_pref, Parcellobject.target_name)
 
@@ -174,8 +174,6 @@ class Parcellobject(metaclass=abc.ABCMeta):
         """ Display a message to explain what input files you need and which
         name you need to indentify those files.
         """
-        self.inputs_needed.__doc__ =\
-            cls.inputs_needed.__doc__ + self.inputs_needed.__doc__
 
         return textwrap.dedent("""
             The seed and target files should be in the subject input folder
@@ -248,7 +246,8 @@ class Parcellobject(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def map_ROIs(self):
-        pass
+        self.seed_path = ut.find_with_pref(
+            self.seed_target_folder, self.seed_pref, Parcellobject.seed_name)
 
     def mat_transform(self, option, mat):
         """ Calculate the chosen transformation on the matrix given
@@ -323,40 +322,46 @@ class Parcellobject(metaclass=abc.ABCMeta):
 
         return self.labels
 
-    def write_clusters(self, shape, affine, ROIs_labels, labels, seed_coord,
-                       out_pref):
+    def write_clusters(self):
         """ Write the clusters in a nifti 3D image where the voxels values are
         the cluster labels
         """
-        # Create an empty volume to store the clusters
-        nii_mask = np.zeros(self.final_shape)
-
-        nvox = len(self.ROIs_labels)
-        # prepare a vector of length nvox-in-seed = len(ROIlabels), to store
-        # the cluster label for each voxel of the seed region
-        ind_clusters = np.zeros(nvox)
-
-
-
-        # To label each voxel with the corresponding cluster value we need to:
-        # (1) retrieve the voxel index (2D matrix row) for each ROI
-        # (2) assign the same cluster value for all voxels in an ROI
-        for ith_ROI in np.arange(len(self.labels)):
-            ind_ith_clu = np.array(np.where(self.ROIs_labels == ith_ROI))  # (1)
-            ind_clusters[ind_ith_clu] = self.labels[ith_ROI] + 1 # (2)
-
-        # We take the vector ind_clusters containing the cluster values
-        # for each voxel and we assign that value in the corresponding xyz
-        # coordinates
-        for jth_vox in np.arange(nvox):
-            vox = self.seed_coord[jth_vox,:].astype('int')
-            nii_mask[vox[0], vox[1], vox[2]] = ind_clusters[jth_vox]
-
-
-        nii_cluster = nib.Nifti1Image(nii_mask, self.final_affine)
-
-        self.clusters_img = os.path.join(self.out_pref + 'clusters.nii.gz')
-        nib.save(nii_cluster, self.clusters_img)
+        self.clusters_path = pm.write_clusters(self.final_shape,
+                                               self.final_affine,
+                                               self.ROIs_labels,
+                                               self.labels,
+                                               self.seed_coord,
+                                               self.res_dir,
+                                               self.out_pref)
+        # # Create an empty volume to store the clusters
+        # nii_mask = np.zeros(self.final_shape)
+        #
+        # nvox = len(self.ROIs_labels)
+        # # prepare a vector of length nvox-in-seed = len(ROIlabels), to store
+        # # the cluster label for each voxel of the seed region
+        # ind_clusters = np.zeros(nvox)
+        #
+        #
+        #
+        # # To label each voxel with the corresponding cluster value we need to:
+        # # (1) retrieve the voxel index (2D matrix row) for each ROI
+        # # (2) assign the same cluster value for all voxels in an ROI
+        # for ith_ROI in np.arange(len(self.labels)):
+        #     ind_ith_clu = np.array(np.where(self.ROIs_labels == ith_ROI))  # (1)
+        #     ind_clusters[ind_ith_clu] = self.labels[ith_ROI] + 1 # (2)
+        #
+        # # We take the vector ind_clusters containing the cluster values
+        # # for each voxel and we assign that value in the corresponding xyz
+        # # coordinates
+        # for jth_vox in np.arange(nvox):
+        #     vox = self.seed_coord[jth_vox,:].astype('int')
+        #     nii_mask[vox[0], vox[1], vox[2]] = ind_clusters[jth_vox]
+        #
+        #
+        # nii_cluster = nib.Nifti1Image(nii_mask, self.final_affine)
+        #
+        # self.clusters_img = os.path.join(self.out_pref + 'clusters.nii.gz')
+        # nib.save(nii_cluster, self.clusters_img)
 
 
 class Tracto_4D(Parcellobject):
@@ -430,6 +435,7 @@ class Tracto_4D(Parcellobject):
         return co_mat_2D
 
     def map_ROIs(self):
+        super().map_ROIs()
         return ut.read_ROIs_from_nifti(self.seed_path)
 
 
@@ -452,14 +458,9 @@ class Tracto_mat(Parcellobject):
     """
     def __init__(self, subj_path, ROIs_size, group_level=False, seed_pref='',
                  target_pref=''):
+        self.ROIs_size = ROIs_size
         super().__init__(subj_path, self.__class__.__name__, seed_pref,
                          target_pref)
-        # seed_mask will be used to create the seedROIs. This file can be
-        # in the subject input folder or in the general group input folder
-        self.seed_mask = ut.find_with_pref(
-            self.seed_target_folder, self.seed_pref, 'seedMask')
-        self.ROIs_size = ROIs_size
-        self.out_pref += str(self.ROIs_size) + "_"
 
 
     def init_input_dict(self):
@@ -471,9 +472,9 @@ class Tracto_mat(Parcellobject):
         """
         # to simplify a bit the access to the elements
         self.in_names = {
-            'fdt_coord':os.path.join('omat*', 'coord_for_fdt_matrix'),
-            'fdt_matrix':os.path.join('omat*', 'fdt_matrix'),
-            'fdt_paths':os.path.join('omat*', 'fdt_paths')}
+            'fdt_coord':os.path.join('omat*', 'coords_for_fdt_matrix'),
+            'fdt_matrix':os.path.join('omat*', 'fdt_matrix*.dot'),
+            'fdt_paths':os.path.join('omat*', 'fdt_paths.nii.gz')}
         d = {self.in_names['fdt_coord']:'',
              self.in_names['fdt_matrix']:'',
              self.in_names['fdt_paths']:''}
@@ -507,62 +508,157 @@ class Tracto_mat(Parcellobject):
         with the name: subj_2D_connectivity_matrix.npy
         """
         # Convert the omat3/fdt_matrix3.dot (whole brain) into npy
-        fdt_matrix = convert_dotbigmat()
+        fdt_matrix = self.convert_dotbigmat()
+        target_ind, _ = self.get_mask_indices(self.target_path)
+        print("I will create the ROIzed connectivity matrix")
+        print("Time for a coffee...")
+
+        # (1)  Import the sparse matrix in binary Python format
+        origmat_3cols = np.load(self.fdt_matrix_py_file)
+
+
+        # (2) Need to subtract 1 since in Python the subscripts start from 0
+        rows = origmat_3cols[:,0].astype('int') - 1
+        cols = origmat_3cols[:,1].astype('int') - 1
+        data = origmat_3cols[:,2].astype('int32')
+        del origmat_3cols
+
+
+        # (3) Create the sparse matrix and add the lower triangular
+        origmat_triu = sparse.csr_matrix((data, (rows, cols)))
+        del rows, cols, data
+
+        # For omat1, the matrix is full and NOT symmetric, therefore
+        # we should NOT add the transposed of the upper triangular
+        origmat = origmat_triu
+        del origmat_triu
+
+        # # For omat3, the matrix is only upper triangular, therefore we Need
+        # # to transpose and add
+        # origmat = origmat_triu + sparse.triu(origmat_triu,1).T
+        # del origmat_triu
+
+
+        # (4) Convert to np.array for ROIzation
+        origmat = origmat.toarray()
+
+        # origmat[0:3,0:3]
+        # plt.imshow(np.log2(origmat[0:100,0:100]+1));
+        # plt.show()
+
+
+
+        # (5) Sum over the rows of origmat to group the connectivity profiles by ROI
+        nROIs = len(np.unique(self.ROIs_labels))
+        connectivity_matrix = np.zeros((nROIs, origmat.shape[1] ))
+
+        for ith_ROI in np.arange(nROIs):
+            # find the indices of seed_coord pointing to
+            #                                         the voxels inside the ROI
+            ind_ith_ROI_in_seed_coord = np.squeeze(
+                np.array(np.where(self.ROIs_labels == ith_ROI)))
+
+            # find the index of origmat/coord pointing to
+            #                 the indices of seed coord pointing to
+            #                                         the voxels inside the ROI
+            ind_ith_ROI_in_origmat = self.seed_ind[ind_ith_ROI_in_seed_coord]
+
+            # do the sum of the rows of origmat corresponding to the voxels in each ROI
+            connectivity_matrix[ith_ROI,:] = np.sum(
+                origmat[ind_ith_ROI_in_origmat,:], axis=0 )
+
+
+
+        # (6) Remove origmat columns (i.e. ribbon voxels) which are not in the target
+        dim_ribbon = origmat.shape[1]
+        if dim_ribbon != len(target_ind):
+            connectivity_matrix = connectivity_matrix[:,target_ind]
+
+
+
+        # (7) Save the ROIzed connectivity_matrix in an npy file
+        np.save(self.cmap2D_path, connectivity_matrix)
+
+
+        # # Display the ROIzed connectivity matrix
+        # plt.imshow(np.log2(connectivity_matrix+1), interpolation='none', aspect='auto')
+        # plt.show()
+
+        return connectivity_matrix
 
     def map_ROIs(self):
-        self.seedROIs = os.path.join(self.seed_target_folder)
-        if os.path.exists(self.seedROIs):
-            return ut.read_ROIs_from_nifti(self.seedROIs)
+        # seed_mask will be used to create the seedROIs. This file can be
+        # in the subject input folder or in the general group input folder
+        self.seed_mask = ut.find_with_pref(
+            self.seed_target_folder, self.seed_pref, 'seedMask')
+        # We have to handle the ROIs_size more elegantly ! But later, today
+        # I have swimming pool.
+        if self.ROIs_size == 0:
+            data = nib.load(self.seed_mask).get_data()
+            w = np.where(data)
+            # There is probably a more elegant way but it seems to work
+            size = len(w[0])
+            # So the default ROIs_size is the size of the seed / 100
+            self.ROIs_size = int(math.floor(size / 100))
+        self.out_pref += str(self.ROIs_size) + "_"
+        self.seed_path = os.path.join(self.seed_target_folder,
+                                 self.seed_pref + "_" + str(self.ROIs_size) + \
+                                 "_seedROIs.nii.gz")
+        # We need self.seed_ind for the creation of the 2D connectivity matrix
+        self.seed_ind, self.seed_coord = self.get_mask_indices(self.seed_mask)
+        if os.path.exists(self.seed_path):
+            return ut.read_ROIs_from_nifti(self.seed_path)
         else:
-            seed_ind, self.seed_coord = self.get_mask_indices(self.seed_mask)
             nii = nib.load(self.in_dict[self.in_names['fdt_paths']])
             nii_dims = nii.header.get_zooms()
 
             voxel_volume = np.prod(nii_dims)
             # voxel_volume = np.prod(np.diag(img.affine))  # alternative method
-            ribbon_volume = len(seed_coord) * voxel_volume
+            ribbon_volume = len(self.seed_coord) * voxel_volume
             # number of clusters to create
-            k = int(math.floor(ribbon_volume / self.ROIsize))
+            k = int(math.floor(ribbon_volume / self.ROIs_size))
 
-
-            print('There are ' + str(np.shape(seed_coord)[0]) +
+            print('There are ' + str(np.shape(self.seed_coord)[0]) +
                   ' voxel for a total of ~' + str(ribbon_volume.astype('int')) +
                   ' mm3')
             print('One voxel is ' + str(round(voxel_volume,3)) + ' mm3')
-            print('With the chosen ROI size of ' + str(ROIsize) +
+            print('With the chosen ROI size of ' + str(self.ROIs_size) +
                   ' mm3 there will be ' + str(k) + ' ROIs')
             print(' ')
             print('I need to create the seed ROIs.')
             print('This might take some time for large seed regions...')
 
-            t0 = time.time()
+            # t0 = time.time()
             ROIlabels = KMeans(n_clusters=k, n_init=10).fit_predict(
                 self.seed_coord)
-            t1 = time.time()
-            print("kmeans performed in %.3f s \n" % (t1 - t0))
+            # t1 = time.time()
+            # print("kmeans performed in %.3f s \n" % (t1 - t0))
 
             # Create a nifti file with the ROIs
 
             min(ROIlabels)
             max(ROIlabels)
+            # img_ROIs_filename = os.path.join(
+            #     self.seed_target_folder,
+            #     self.seed_pref + "_" + self.ROIs_size + "_seedROIs.npz"
+            # )
+            # np.savez(ROIfile, ROIlabels=ROIlabels)
 
             mask = np.zeros(nii.get_data().shape)
             for i in np.arange(k):
                 ind = np.where(ROIlabels==i)
-                mask[seed_coord[ind,0],
-                     seed_coord[ind,1], seed_coord[ind,2]] = i + 1
+                mask[self.seed_coord[ind,0],
+                     self.seed_coord[ind,1], self.seed_coord[ind,2]] = i + 1
 
             img_ROIs = nib.Nifti1Image(mask, nii.affine)
-            img_ROIs_filename = self.seedROIs
 
-            nib.save(img_ROIs, img_ROIs_filename)
+            nib.save(img_ROIs, self.seed_path)
 
 
-            np.savez(ROIfile, ROIlabels=ROIlabels)
-            print('I created' + ROIfile + ' for you');
+            print('I created' + self.seed_path + ' for you');
             print('The ROIlabels are ordered as the rows of seed_coord')
 
-            return ROIlabels
+            return self.seed_coord, ROIlabels
 
 
         # Read seed_mask, target_mask and coord_for_fdt_matrix3
@@ -581,12 +677,11 @@ class Tracto_mat(Parcellobject):
             The array contains 3 columns: x, y, value
         """
         fdt_dotmatrix_file = self.in_dict[self.in_names['fdt_matrix']]
-        fdt_matrix_py_file = os.path.join(self.seed_target_folder,
-                                          self.out_pref + 'fdt_matrix.npy')
+        self.fdt_matrix_py_file = os.path.join(
+            self.seed_target_folder, self.out_pref + 'fdt_matrix.npy')
 
-        if os.path.exists(fdt_matrix_py_file):
-            fdt_matrix = np.load(fdt_matrix_py_file)
-
+        if os.path.exists(self.fdt_matrix_py_file):
+            fdt_matrix = np.load(self.fdt_matrix_py_file)
         else:
             print("Please wait while I convert the fdt_matrix3.dot into \
                   Python format...")
@@ -595,10 +690,11 @@ class Tracto_mat(Parcellobject):
             fdt_dotmatrix_df = pd.read_csv(fdt_dotmatrix_file,
                                            header=None, delim_whitespace=True)
             fdt_dotmatrix = fdt_dotmatrix_df.as_matrix()
-            # save the matrix in binary format
-            np.save(fdt_matrix_py_file, fdt_dotmatrix)
 
-            fdt_matrix = np.load(fdt_matrix_py_file)
+            # save the matrix in binary format
+            np.save(self.fdt_matrix_py_file, fdt_dotmatrix)
+
+            fdt_matrix = fdt_dotmatrix
 
         return fdt_matrix
 

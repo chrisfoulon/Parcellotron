@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
+import os
 import numpy as np
 
 from sklearn.cluster import KMeans
 from sklearn import decomposition
 
 import model.matrix_transformations as mt
+import nibabel as nib
 
 
 class Parceller():
@@ -174,3 +176,42 @@ class Parceller():
         np.save(path_pref + "ROI_clu_sort.npy", ROI_clu_sort)
 
         return labels
+
+def write_clusters(shape, affine, ROIs_labels, labels, seed_coord, res_dir,
+                   out_pref):
+    """ Write the clusters in a nifti 3D image where the voxels values are
+    the cluster labels
+    """
+    # Create an empty volume to store the clusters
+    nii_mask = np.zeros(shape)
+
+    nvox = len(ROIs_labels)
+    # prepare a vector of length nvox-in-seed = len(ROIlabels), to store
+    # the cluster label for each voxel of the seed region
+    ind_clusters = np.zeros(nvox)
+    import view.display_intermediates as di
+
+
+    # To label each voxel with the corresponding cluster value we need to:
+    # (1) retrieve the voxel index (2D matrix row) for each ROI
+    # (2) assign the same cluster value for all voxels in an ROI
+    for ith_ROI in np.arange(len(labels)):
+        ind_ith_clu = np.array(np.where(ROIs_labels == ith_ROI))  # (1)
+        ind_clusters[ind_ith_clu] = labels[ith_ROI] + 1 # (2)
+
+
+    # We take the vector ind_clusters containing the cluster values
+    # for each voxel and we assign that value in the corresponding xyz
+    # coordinates
+    for jth_vox in np.arange(nvox):
+        vox = seed_coord[:,jth_vox].astype('int64')
+        nii_mask[vox[0], vox[1], vox[2]] = ind_clusters[jth_vox]
+
+
+    nii_cluster = nib.Nifti1Image(nii_mask, affine)
+
+    clusters_img = os.path.join(res_dir, out_pref + 'clusters.nii.gz')
+    nib.save(nii_cluster, clusters_img)
+
+    # We return the path to the nifti file
+    return clusters_img

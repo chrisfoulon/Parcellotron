@@ -80,6 +80,7 @@ def find_in_filename(path, string):
     elif len(arr) == 1:
         return arr[0]
     else:
+        print(arr)
         raise Exception("I found several files corresponding to this pattern")
 
 def find_with_pref(path, pref, string):
