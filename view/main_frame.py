@@ -48,11 +48,12 @@ class MainFrame(QMainWindow):
         # self.modality_list.addItem("Item 4");
 
         self.root = QRadioButton("Root folder")
-        self.root.setChecked(True)
+        self.root.toggled.connect(self.disable_bro)
         self.group_check = QCheckBox("Group level analysis")
         # self.root.toggled.connect(lambda:self.btnstate(self.root))
 
         self.subj = QRadioButton("Subject folder")
+        self.subj.toggled.connect(self.disable_bro)
         # self.subj.toggled.connect(lambda:self.btnstate(self.subj))
         self.root_bro = BrowseWidget(None, "dir", "")
         self.subj_bro = BrowseWidget(None, "dir", "")
@@ -170,6 +171,9 @@ class MainFrame(QMainWindow):
         # self.statusBar().showMessage('Not all parameters have been set')
         self.statusBar.addWidget(QLabel('Not all parameters have been set'), 1)
         self.statusBar.addWidget(QLabel('Another label'))
+
+        self.root.setChecked(True)
+        
         self.show()
 
 
@@ -215,6 +219,14 @@ class MainFrame(QMainWindow):
             self.param += "-r " + self.rotation_list.currentText()
         if met == "KMeans":
             self.param += self.nclu_fld.text()
+
+    def disable_bro(self):
+        if self.root.isChecked():
+            self.root_bro.setDisabled(False)
+            self.subj_bro.setDisabled(True)
+        if self.subj.isChecked():
+            self.root_bro.setDisabled(True)
+            self.subj_bro.setDisabled(False)
 
     def run(self):
         self.build_param()

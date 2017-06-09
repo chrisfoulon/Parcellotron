@@ -333,35 +333,6 @@ class Parcellobject(metaclass=abc.ABCMeta):
                                                self.seed_coord,
                                                self.res_dir,
                                                self.out_pref)
-        # # Create an empty volume to store the clusters
-        # nii_mask = np.zeros(self.final_shape)
-        #
-        # nvox = len(self.ROIs_labels)
-        # # prepare a vector of length nvox-in-seed = len(ROIlabels), to store
-        # # the cluster label for each voxel of the seed region
-        # ind_clusters = np.zeros(nvox)
-        #
-        #
-        #
-        # # To label each voxel with the corresponding cluster value we need to:
-        # # (1) retrieve the voxel index (2D matrix row) for each ROI
-        # # (2) assign the same cluster value for all voxels in an ROI
-        # for ith_ROI in np.arange(len(self.labels)):
-        #     ind_ith_clu = np.array(np.where(self.ROIs_labels == ith_ROI))  # (1)
-        #     ind_clusters[ind_ith_clu] = self.labels[ith_ROI] + 1 # (2)
-        #
-        # # We take the vector ind_clusters containing the cluster values
-        # # for each voxel and we assign that value in the corresponding xyz
-        # # coordinates
-        # for jth_vox in np.arange(nvox):
-        #     vox = self.seed_coord[jth_vox,:].astype('int')
-        #     nii_mask[vox[0], vox[1], vox[2]] = ind_clusters[jth_vox]
-        #
-        #
-        # nii_cluster = nib.Nifti1Image(nii_mask, self.final_affine)
-        #
-        # self.clusters_img = os.path.join(self.out_pref + 'clusters.nii.gz')
-        # nib.save(nii_cluster, self.clusters_img)
 
 
 class Tracto_4D(Parcellobject):
