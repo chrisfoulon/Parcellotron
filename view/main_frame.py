@@ -173,7 +173,7 @@ class MainFrame(QMainWindow):
         self.statusBar.addWidget(QLabel('Another label'))
 
         self.root.setChecked(True)
-        
+
         self.show()
 
 
@@ -210,7 +210,7 @@ class MainFrame(QMainWindow):
             self.param += "Tracto_4D "
         if self.modality_list.currentIndex() == 1:
             self.param += "Tracto_mat "
-            self.param += "-ROIs_size " + self.roisize_fld.text()
+            self.param += "-ROIs_size " + self.roisize_fld.text() + " "
         self.param += "-sim " + self.sim_list.currentText() + " "
         self.param += "-t " + self.transform_list.currentText() + " "
         met = self.met_list.currentText()
