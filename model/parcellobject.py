@@ -119,9 +119,11 @@ class Parcellobject(metaclass=abc.ABCMeta):
         self.res_dir = os.path.join(self.input_dir, "_" +
                                     Parcellobject.software_name + "_results")
         if not os.path.exists(self.res_dir):
+            print("The result directory is: " + self.res_dir)
             os.mkdir(self.res_dir)
+            print("And it is supposed to be created here.")
 
-        self.temp_dict = self.init_temp_paths(self.res_dir)
+        # self.temp_dict = self.init_temp_paths(self.res_dir)
 
         # We check if the input files needed exist and we store their paths
         self.in_dict = self.init_input_dict()
@@ -201,6 +203,8 @@ class Parcellobject(metaclass=abc.ABCMeta):
                 print('I did not find the ' + k + ' file.')
             self.in_dict[k] = res
             boo = boo and (res != "")
+        print("The dictionary which is storing the inputs: ")
+        print(self.in_dict)
         return boo
 
     def init_temp_paths(self, path):
@@ -430,7 +434,8 @@ class Tracto_mat(Parcellobject):
     def __init__(self, subj_path, ROIs_size, group_level=False, seed_pref='',
                  target_pref=''):
         self.ROIs_size = ROIs_size
-        super().__init__(subj_path, self.__class__.__name__, seed_pref,
+        super().__init__(subj_path, self.__class__.__name__, group_level,
+                         seed_pref,
                          target_pref)
 
 
