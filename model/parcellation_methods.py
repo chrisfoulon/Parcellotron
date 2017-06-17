@@ -204,7 +204,7 @@ def write_clusters(shape, affine, ROIs_labels, labels, seed_coord, res_dir,
     # for each voxel and we assign that value in the corresponding xyz
     # coordinates
     for jth_vox in np.arange(nvox):
-        vox = seed_coord[:,jth_vox].astype('int64')
+        vox = seed_coord[jth_vox,:].astype('int64')
         nii_mask[vox[0], vox[1], vox[2]] = ind_clusters[jth_vox]
 
 

@@ -44,17 +44,16 @@ class MainFrame(QMainWindow):
 
         self.modality_list.addItem("Tractography 4D")
         self.modality_list.addItem("Tractography matrix")
-        # self.modality_list.addItem("Item 3");
-        # self.modality_list.addItem("Item 4");
-
-        self.root = QRadioButton("Root folder")
-        self.root.toggled.connect(self.disable_bro)
-        self.group_check = QCheckBox("Group level analysis")
-        # self.root.toggled.connect(lambda:self.btnstate(self.root))
+        self.modality_list.currentIndexChanged.connect(self.hide_roisize)
 
         self.subj = QRadioButton("Subject folder")
         self.subj.toggled.connect(self.disable_bro)
-        # self.subj.toggled.connect(lambda:self.btnstate(self.subj))
+
+        self.root = QRadioButton("Root folder (with several subjects)")
+        self.root.toggled.connect(self.disable_bro)
+        self.group_check = QCheckBox("Group level analysis(Not yet available)")
+
+
         self.root_bro = BrowseWidget(None, "dir", "")
         self.subj_bro = BrowseWidget(None, "dir", "")
 
@@ -64,11 +63,11 @@ class MainFrame(QMainWindow):
         self.target_fld = QLineEdit(self)
 
         grid = QGridLayout()
-        grid.addWidget(self.root, 0, 0)
-        grid.addWidget(self.group_check, 0, 1)
-        grid.addWidget(self.root_bro, 1, 0, 1, 2)
-        grid.addWidget(self.subj, 2, 0)
-        grid.addWidget(self.subj_bro, 3, 0, 1, 2)
+        grid.addWidget(self.subj, 0, 0)
+        grid.addWidget(self.subj_bro, 1, 0, 1, 2)
+        grid.addWidget(self.root, 2, 0)
+        grid.addWidget(self.group_check, 2, 1)
+        grid.addWidget(self.root_bro, 3, 0, 1, 2)
         grid.addWidget(seed_lbl, 4, 0)
         grid.addWidget(self.seed_fld, 5, 0)
         grid.addWidget(target_lbl, 4, 1)
@@ -83,9 +82,12 @@ class MainFrame(QMainWindow):
         self.tab1.setLayout(vBoxlayout)
 
         # Tab 2 : Parcellation parameters
-
-        self.roisize_lbl = QLabel("Select the size of the ROIs")
+        self.roisize_lay = QHBoxLayout()
+        roisize_lbl = QLabel("Select the size of the ROIs")
         self.roisize_fld = QLineEdit()
+        self.roisize_lay.addWidget(roisize_lbl)
+        self.roisize_lay.addWidget(self.roisize_fld)
+
 
         self.transform_list = QComboBox()
         self.transform_list.addItem("log2")
@@ -140,13 +142,12 @@ class MainFrame(QMainWindow):
         grid2 = QGridLayout()
         grid2.addLayout(met_lay, 0, 0)
         grid2.addLayout(self.met_param_lay, 0, 1)
-        grid2.addWidget(self.roisize_lbl, 2, 0)
-        grid2.addWidget(self.roisize_fld, 3, 0)
-        grid2.addWidget(QLabel("Select the type of similarity matrix:"), 4, 0)
-        grid2.addWidget(self.sim_list, 5, 0)
+        grid2.addLayout(self.roisize_lay, 2, 0)
+        grid2.addWidget(QLabel("Select the type of similarity matrix:"), 3, 0)
+        grid2.addWidget(self.sim_list, 4, 0)
         grid2.addWidget(QLabel("Select connectivity matrix tranformation:"),
-                        6, 0)
-        grid2.addWidget(self.transform_list, 7, 0)
+                        5, 0)
+        grid2.addWidget(self.transform_list, 6, 0)
 
         run_box = QHBoxLayout()
         run_sub_box = QVBoxLayout()
@@ -172,7 +173,7 @@ class MainFrame(QMainWindow):
         self.statusBar.addWidget(QLabel('Not all parameters have been set'), 1)
         self.statusBar.addWidget(QLabel('Another label'))
 
-        self.root.setChecked(True)
+        self.subj.setChecked(True)
 
         self.show()
 
@@ -227,6 +228,12 @@ class MainFrame(QMainWindow):
         if self.subj.isChecked():
             self.root_bro.setDisabled(True)
             self.subj_bro.setDisabled(False)
+
+    def hide_roisize(self):
+        if self.modality_list.currentText() == "Tracto_4D":
+            self.roisize_lay.hide()
+        if self.modality_list.currentText() == "Tracto_mat":
+            self.roisize_lay.show()
 
     def run(self):
         self.build_param()

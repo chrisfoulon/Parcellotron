@@ -578,7 +578,7 @@ class Tracto_mat(Parcellobject):
             self.ROIs_size = int(math.floor(size / 100))
         self.out_pref += str(self.ROIs_size) + "_"
         self.seed_path = os.path.join(self.seed_target_folder,
-                                 self.seed_pref + "_" + str(self.ROIs_size) + \
+                                 self.seed_pref + str(self.ROIs_size) + \
                                  "_seedROIs.nii.gz")
         # We need self.seed_ind for the creation of the 2D connectivity matrix
         self.seed_ind, self.seed_coord = self.get_mask_indices(self.seed_mask)
@@ -653,8 +653,9 @@ class Tracto_mat(Parcellobject):
             The array contains 3 columns: x, y, value
         """
         fdt_dotmatrix_file = self.in_dict[self.in_names['fdt_matrix']]
+        print("ST_folder:" + self.seed_target_folder)
         self.fdt_matrix_py_file = os.path.join(
-            self.seed_target_folder, self.out_pref + 'fdt_matrix.npy')
+            self.res_dir, 'fdt_matrix.npy')
 
         if os.path.exists(self.fdt_matrix_py_file):
             fdt_matrix = np.load(self.fdt_matrix_py_file)
