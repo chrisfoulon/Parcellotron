@@ -300,6 +300,8 @@ class Parcellobject(metaclass=abc.ABCMeta):
         """
         pref = option
         self.out_pref += option + '_'
+        if option == 'PCA':
+            self.out_pref += param_parcellate + '_'
         path_pref = os.path.join(self.res_dir, self.out_pref)
         if param_parcellate != None:
             parceller = pm.Parceller(option, sim_mat, path_pref,
@@ -621,9 +623,8 @@ class Tracto_mat(Parcellobject):
                 mask[self.seed_coord[ind,0],
                      self.seed_coord[ind,1], self.seed_coord[ind,2]] = i + 1
             # To be in the same orientation as the 4D method
-            mask = np.transpose(mask)
-            print("seedROIs shape")
-            print(mask.shape)
+            print("seed_path: ")
+            print(self.seed_path)
             img_ROIs = nib.Nifti1Image(mask, nii.affine)
 
             nib.save(img_ROIs, self.seed_path)

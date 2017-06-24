@@ -15,10 +15,13 @@ def similarity_correlation(co_mat):
         seed-by-seed matrix of correlation between each and each other seed's
         connectivity profile
     """
-    cor_mat = np.corrcoef(co_mat)
+    cmat = co_mat + 0
+    print("patate")
+    cor_mat = np.corrcoef(cmat)
+    print("patate2")
     ind = np.where(np.isnan(cor_mat))
+    print("patate3")
     cor_mat[ind]=0
-
     return cor_mat
 
 
