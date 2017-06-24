@@ -490,8 +490,11 @@ class Tracto_mat(Parcellobject):
         origmat = sparse.csr_matrix((data, (rows, cols)))
         del rows, cols, data
 
-        # if np.sum(sparse.tril(origmat, -1)) == 0:
-        #     origmat = origmat + sparse.triu(origmat, 1).T
+        if np.sum(sparse.tril(origmat, -1)) == 0:
+            print("I found omat3 format")
+            origmat = origmat + sparse.triu(origmat, 1).T
+        else:
+            print("I found omat1 format")
 
         # # (3) Create the sparse matrix and add the lower triangular
         # origmat_triu = sparse.csr_matrix((data, (rows, cols)))
