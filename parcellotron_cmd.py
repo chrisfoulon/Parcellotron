@@ -99,6 +99,7 @@ def parcellate_obj(group_level, files_arr, mod, size, transformation,
         subj_obj.mat_transform(transformation, mat_2D)
         subj_obj.similarity(sim_mat, subj_obj.tr_mat_2D)
         labels = subj_obj.parcellate(method, subj_obj.sim_mat, param_parcellate)
+        
         if not group_level:
             subj_obj.write_clusters()
         print("FINISHED !")

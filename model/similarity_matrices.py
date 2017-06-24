@@ -16,6 +16,8 @@ def similarity_correlation(co_mat):
         connectivity profile
     """
     cor_mat = np.corrcoef(co_mat)
+    ind = np.where(np.isnan(cor_mat))
+    cor_mat[ind]=0
 
     return cor_mat
 

@@ -285,7 +285,6 @@ class Parcellobject(metaclass=abc.ABCMeta):
         if option == 'distance':
             sim_mat = sm.similarity_distance(mat)
         self.sim_mat = sim_mat
-
         return self.sim_mat
 
     def parcellate(self, option, sim_mat, param_parcellate=None):
@@ -306,21 +305,6 @@ class Parcellobject(metaclass=abc.ABCMeta):
             parceller = pm.Parceller(option, sim_mat, path_pref,
                                      param_parcellate)
             labels = parceller.labels
-        # if option == 'KMeans':
-        #     if param_parcellate != None:
-        #         labels = pm.parcellate_KMeans(sim_mat, param_parcellate,
-        #                                       path_pref)
-        #     else:
-        #         raise Exception("""You need to define a number of cluster
-        #                         to use the KMeans algorithm""")
-        # elif option == 'PCA':
-        #     if param_parcellate != None:
-        #         labels = pm.parcellate_PCA(sim_mat, param_parcellate, path_pref)
-        #     else:
-        #         raise Exception("""You need to define the rotation you want
-        #                         to to apply in the PCA algorithm""")
-        # else:
-        #     raise Exception(option + " is not yet implemented")
 
         self.labels = labels
 
@@ -491,6 +475,8 @@ class Tracto_mat(Parcellobject):
 
         # (1)  Import the sparse matrix in binary Python format
         origmat_3cols = np.load(self.fdt_matrix_py_file)
+        print(origmat_3cols.shape)
+        print("Shape seed")
 
 
         # (2) Need to subtract 1 since in Python the subscripts start from 0
@@ -499,27 +485,34 @@ class Tracto_mat(Parcellobject):
         data = origmat_3cols[:,2].astype('int32')
         del origmat_3cols
 
-
-        # (3) Create the sparse matrix and add the lower triangular
-        origmat_triu = sparse.csr_matrix((data, (rows, cols)))
+        origmat = sparse.csr_matrix((data, (rows, cols)))
         del rows, cols, data
 
-        # For omat1, the matrix is full and NOT symmetric, therefore
-        # we should NOT add the transposed of the upper triangular
-        origmat = origmat_triu
-        del origmat_triu
+        # if np.sum(sparse.tril(origmat, -1)) == 0:
+        #     origmat = origmat + sparse.triu(origmat, 1).T
 
-        # # For omat3, the matrix is only upper triangular, therefore we Need
-        # # to transpose and add
-        # origmat = origmat_triu + sparse.triu(origmat_triu,1).T
+        # # (3) Create the sparse matrix and add the lower triangular
+        # origmat_triu = sparse.csr_matrix((data, (rows, cols)))
+        # del rows, cols, data
+        # print(origmat_triu.shape)
+        # # For omat1, the matrix is full and NOT symmetric, therefore
+        # # we should NOT add the transposed of the upper triangular
+        # origmat = origmat_triu
         # del origmat_triu
-
-
+        #
+        # # # For omat3, the matrix is only upper triangular, therefore we Need
+        # # # to transpose and add
+        # # origmat = origmat_triu + sparse.triu(origmat_triu,1).T
+        # # del origmat_triu
+        #
+        # print(origmat.shape)
         # (4) Convert to np.array for ROIzation
-        origmat = origmat.toarray()
+        # origmat = origmat.astype('int32')
+        # origmat = origmat.toarray()
 
         # origmat[0:3,0:3]
-        # plt.imshow(np.log2(origmat[0:100,0:100]+1));
+        # import matplotlib.pyplot as plt
+        # plt.imshow(origmat);
         # plt.show()
 
 
@@ -555,11 +548,10 @@ class Tracto_mat(Parcellobject):
         # (7) Save the ROIzed connectivity_matrix in an npy file
         np.save(self.cmap2D_path, connectivity_matrix)
 
-
         # # Display the ROIzed connectivity matrix
+        # import matplotlib.pyplot as plt
         # plt.imshow(np.log2(connectivity_matrix+1), interpolation='none', aspect='auto')
         # plt.show()
-
         return connectivity_matrix
 
     def map_ROIs(self):
@@ -582,6 +574,9 @@ class Tracto_mat(Parcellobject):
                                  "_seedROIs.nii.gz")
         # We need self.seed_ind for the creation of the 2D connectivity matrix
         self.seed_ind, self.seed_coord = self.get_mask_indices(self.seed_mask)
+
+        print("Seed coord shape after get mask")
+        print(self.seed_coord.shape)
         if os.path.exists(self.seed_path):
             return ut.read_ROIs_from_nifti(self.seed_path)
         else:
@@ -612,8 +607,8 @@ class Tracto_mat(Parcellobject):
 
             # Create a nifti file with the ROIs
 
-            min(ROIlabels)
-            max(ROIlabels)
+            # min(ROIlabels)
+            # max(ROIlabels)
             # img_ROIs_filename = os.path.join(
             #     self.seed_target_folder,
             #     self.seed_pref + "_" + self.ROIs_size + "_seedROIs.npz"
@@ -625,7 +620,10 @@ class Tracto_mat(Parcellobject):
                 ind = np.where(ROIlabels==i)
                 mask[self.seed_coord[ind,0],
                      self.seed_coord[ind,1], self.seed_coord[ind,2]] = i + 1
-
+            # To be in the same orientation as the 4D method
+            mask = np.transpose(mask)
+            print("seedROIs shape")
+            print(mask.shape)
             img_ROIs = nib.Nifti1Image(mask, nii.affine)
 
             nib.save(img_ROIs, self.seed_path)
@@ -633,7 +631,6 @@ class Tracto_mat(Parcellobject):
 
             print('I created' + self.seed_path + ' for you');
             print('The ROIlabels are ordered as the rows of seed_coord')
-
             return self.seed_coord, ROIlabels
 
 
@@ -692,7 +689,8 @@ class Tracto_mat(Parcellobject):
         # rows in the fdt_matrix3.dot matrix.
         # NB: In matlab we need to add 1 since the matrix indices start from 1.
         #     In Python they start from zero, so we leave them as they are.
-        coord = np.genfromtxt(self.in_dict[self.in_names['fdt_coord']])[:,0:3]
+        coord = np.genfromtxt(
+            self.in_dict[self.in_names['fdt_coord']])[:,0:3].astype('int')
 
         # Read the [mask_path].nii.gz
         masknii = nib.load(mask_path).get_data()
@@ -734,7 +732,6 @@ class Tracto_mat(Parcellobject):
         # If u want to test, use the following lines
         # coord[ind_mask,:]
         # mask
-
         return ind_mask, coord_mask.astype('int')
 
 

@@ -184,7 +184,6 @@ def write_clusters(shape, affine, ROIs_labels, labels, seed_coord, res_dir,
     """
     # Create an empty volume to store the clusters
     nii_mask = np.zeros(shape)
-
     nvox = len(ROIs_labels)
     # prepare a vector of length nvox-in-seed = len(ROIlabels), to store
     # the cluster label for each voxel of the seed region
@@ -199,7 +198,7 @@ def write_clusters(shape, affine, ROIs_labels, labels, seed_coord, res_dir,
         ind_ith_clu = np.array(np.where(ROIs_labels == ith_ROI))  # (1)
         ind_clusters[ind_ith_clu] = labels[ith_ROI] + 1 # (2)
 
-
+    print("ind_cluster shape: " + str(ind_clusters.shape))
     # We take the vector ind_clusters containing the cluster values
     # for each voxel and we assign that value in the corresponding xyz
     # coordinates
