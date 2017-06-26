@@ -31,6 +31,7 @@ We explain here how to perform CBP using the omatrix1 output by FSL Fdt. A tutor
 2. Create a folder structure similar to the one below. E.g. for a given subject *S_123456* create a subfolder *Tracto_mat* containing:
 	* the omat1 directory output which is output by the FSL Fdt tractography
 	* two Nifti images, one for the seed region to be parcellated, the other for the target region, named respectively  *seedMask.nii.gz* and *targetMask.nii.gz* 
+	
 ![Input_folder](https://dl.dropboxusercontent.com/u/13850642/folder_structure.png)
 
 
