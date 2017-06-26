@@ -31,6 +31,7 @@ We explain here how to perform CBP using the omatrix1 output by FSL Fdt. A tutor
 2. Create a folder structure similar to the one below. In particular make sure that: 
 * the omat1 directory output by the tractography is contained in a folder named *Tracto_mat*
 * the *Tracto_mat* subfolder also contains a Nifti image of the seed region - ending in *seedMask.nii.gz* and that of the target region ending with *targetMask* 
+
 ![Input_folder](https://dl.dropboxusercontent.com/u/13850642/folder_structure.png)
 
 3. Launch the Parcellotron with:
