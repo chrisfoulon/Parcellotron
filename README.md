@@ -39,9 +39,11 @@ We explain here how to perform CBP using the omatrix1 output by FSL Fdt. A tutor
 
 4. Follow the instructions in the GUI and choose the appropriate parameters according to your data type and hypotheses. 
 
-Parameters
+Parameters (which are not self-explanatory)
 ----------------
-
+* **Prefix of seed and target files**: in the case of e.g. SMA_seedMask and WHOLE_BRAIN_targetMask the prefix for seed and target will be SMA and WHOLE_BRAIN respectively.
+* **Modality**: Refer to the *Input data* section above.
+*  **Size of the ROIs**: in cubic mm. The number of seed voxels in each ROI will be rounded to fit the size specified here.
 
 
 
