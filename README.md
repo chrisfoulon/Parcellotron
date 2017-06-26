@@ -3,8 +3,8 @@
 
 Introduction
 ------------
-Connectivity-based parcellation has become one of the most interesting application of MRI-based tractography [1], [2], [3], [4] . 
-The Parcellotron is a Connectivity-Based Parcellation software for the rest of us. 
+Connectivity-Based Parcellation (CBP) has become one of the most interesting application of MRI-based tractography [1], [2], [3], [4]. So far however performing CBP required extensive coding and technical skills. 
+The Parcellotron is a Connectivity-Based Parcellation software for the rest of us. It enables every researcher having access to tractography data to perform CBP from an intuitive graphical user interface, as well as from a command-line interface.
 
 
 Installation
