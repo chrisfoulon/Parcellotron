@@ -35,7 +35,9 @@ We explain here how to perform CBP using the omatrix1 output by FSL Fdt. A tutor
 ![Input_folder](https://dl.dropboxusercontent.com/u/13850642/folder_structure.png)
 
 3. Launch the Parcellotron with:
-```$ python3.6 parcellotron.py```
+```
+$ python3.6 parcellotron.py
+```
 
 4. Follow the instructions in the GUI and choose the appropriate parameters according to your data type and hypotheses. 
 
