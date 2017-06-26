@@ -31,7 +31,6 @@ We explain here how to perform CBP using the omatrix1 output by FSL Fdt. A tutor
 2. Create a folder structure similar to the one below. In particular make sure that: 
 * the omat1 directory output by the tractography is contained in a folder named *Tracto_mat*
 * the *Tracto_mat* subfolder also contains a Nifti image of the seed region - ending in *seedMask.nii.gz* and that of the target region ending with *targetMask* 
-
 ![Input_folder](https://dl.dropboxusercontent.com/u/13850642/folder_structure.png)
 
 3. Launch the Parcellotron with:
@@ -39,13 +38,20 @@ We explain here how to perform CBP using the omatrix1 output by FSL Fdt. A tutor
 
 4. Follow the instructions in the GUI and choose the appropriate parameters according to your data type and hypotheses. 
 
+Parameters
+----------------
+
+
 
 
 References
 ---------------
 [1]: Johansen-Berg, H, Behrens, TE, Robson, MD, Drobnjak, I, Rushworth, MF, Brady, JM, Smith, SM, Higham, DJ, Matthews, PM (2004) Changes in connectivity profiles define functionally distinct regions in human medial frontal cortex. Proc Natl Acad Sci U S A, 101:13335–13340.
+
 [2]: Thiebaut de Schotten, M, Urbanski, M, Batrancourt, B, Levy, R, Dubois, B, Cerliani, L, Volle, E (2016) Rostro-caudal Architecture of the Frontal Lobes in Humans. Cereb Cortex.
+
 [3]: Cerliani, L, D’Arceuil, H, Thiebaut de Schotten, M (2016) Connectivity-based parcellation of the macaque frontal cortex, and its relation with the cytoarchitectonic distribution described in current atlases. Brain Struct Funct.
+
 [4]: Cloutman, LL, Lambon Ralph, MA (2012) Connectivity-based structural and functional parcellation of the human cortex using diffusion imaging and tractography. Front Neuroanat, 6:34.
 
 
