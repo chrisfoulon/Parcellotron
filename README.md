@@ -43,7 +43,7 @@ $ python3.6 parcellotron.py
 
 Parameters (which are not self-explanatory)
 ----------------
-* **Prefix of seed and target files**: in the case of e.g. SMA_seedMask and WHOLE_BRAIN_targetMask the prefix for seed and target will be SMA and WHOLE_BRAIN respectively.
+* **Prefix of seed and target files**: (**Coming soon**. For now just use the names *seedMask* and *targetMask* with no prefixes)
 * **Modality**: Refer to the *Input data* section above.
 *  **Size of the ROIs**: in cubic mm. The number of seed voxels in each ROI will be rounded to fit the size specified here.
 
