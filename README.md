@@ -3,7 +3,8 @@
 
 Introduction
 ------------
-The Parcellotron is the Connectivity-Based Parcellation software for the rest of us
+The Parcellotron is a Connectivity-Based Parcellation software for the rest of us. 
+
 
 Installation
 ------------
@@ -13,7 +14,4 @@ $ git clone http://github.com/chrifoulon/Parcellotron
 $ python3.6 parcellotron.py 
 ```
 
-
-Usage
------
 
