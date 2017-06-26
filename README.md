@@ -26,15 +26,15 @@ Usage
 -----
 We explain here how to perform CBP using the omatrix1 output by FSL Fdt. A tutorial on the 4D format is coming soon.
 
-1. Perform the probabilistic tractography from every voxel inside a mask containing both the seed region you intend to parcellate, and the target region (e.g the whole brain). We will soon post a sample script.
+1. Perform the probabilistic tractography from every voxel inside a mask containing both the seed region you intend to parcellate, and the target region, e.g the whole brain (we will soon post a sample script on how to perform the tractography).
  
-2. Create a folder structure similar to the one below. In particular make sure that: 
-* the omat1 directory output by the tractography is contained in a folder named *Tracto_mat*
-* the *Tracto_mat* subfolder also contains a Nifti image of the seed region - ending in *seedMask.nii.gz* and that of the target region ending with *targetMask* 
-
+2. Create a folder structure similar to the one below. E.g. for a given subject *S_123456* create a subfolder *Tracto_mat* containing:
+	* the omat1 directory output which is output by the FSL Fdt tractography
+	* two Nifti images, one for the seed region to be parcellated, the other for the target region, named respectively  *seedMask.nii.gz* and *targetMask.nii.gz* 
 ![Input_folder](https://dl.dropboxusercontent.com/u/13850642/folder_structure.png)
 
-3. Launch the Parcellotron with:
+
+3.  Launch the Parcellotron with:
 ```
 $ python3.6 parcellotron.py
 ```
