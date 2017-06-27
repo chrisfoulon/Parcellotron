@@ -143,7 +143,7 @@ class Parcellobject(metaclass=abc.ABCMeta):
             """
 
         self.target_path = ut.find_with_pref(
-            self.seed_target_folder, self.seed_pref, Parcellobject.target_name)
+            self.seed_target_folder, self.target_pref, Parcellobject.target_name)
 
         # Create a map of correspondence among ROIs and voxels, where the ROI
         # order also reflects that of the (subsequent) rows of the connectivity
@@ -731,28 +731,3 @@ class Tracto_mat(Parcellobject):
         # coord[ind_mask,:]
         # mask
         return ind_mask, coord_mask.astype('int')
-
-
-# %%
-# test1 = Tracto_4D("/data/BCBLab/test_COBRA/S1")
-# mat = test1.co_mat_2D
-#
-# mat.shape
-# print(test1.read_inputs_into_2D.__doc__)
-# ind, rows = test1.map_ROIs
-# # %%
-# st = os.path.join("blabla", "bliblibli")
-# print("\n" + os.path.dirname(
-#     os.path.dirname(os.path.join("/data/BCBLab/test_COBRA/S1/", ""))))
-# # os.rmdir("blibli")
-# print(st)
-# tt = """test
-# test bla"""
-# type(st)
-# def func(str):
-#     assert len(str) > 2, "Error lol"
-#     print(str)
-# func("1")
-# def returns_str():
-#     return "une string"
-# assert 2 == 1, returns_str()
