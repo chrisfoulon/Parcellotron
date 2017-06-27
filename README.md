@@ -28,7 +28,7 @@ Usage
 -----
 We explain here how to perform CBP using the omatrix1 output by FSL Fdt. A tutorial on the 4D format is coming soon.
 
-1. Perform the probabilistic tractography from every voxel inside a mask containing both the seed region you intend to parcellate, and the target region, e.g the whole brain (we will soon post a sample script on how to perform the tractography).
+1. Perform the probabilistic tractography from every voxel inside a mask containing both the seed region you intend to parcellate, and the target region, e.g the whole brain. You can learn how to do that on the [FSL Fdt User Guide](https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FDT/UserGuide)
  
 2. Create a folder structure similar to the one below. E.g. for a given subject *S_123456* create a subfolder *Tracto_mat* containing:
 	* the omat1 directory output which is output by the FSL Fdt tractography
