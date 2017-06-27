@@ -2,7 +2,7 @@
 import sys
 import subprocess
 
-from PyQt5.QtCore import Qt, QSize
+from PyQt5.QtCore import Qt, QSize, QRect
 from PyQt5.QtGui import QIcon, QFont, QPixmap
 # I know I know ...
 from PyQt5.QtWidgets import *
@@ -163,7 +163,20 @@ class MainFrame(QMainWindow):
 
         self.tabs.addTab(self.tab1,"Files")
         self.tabs.addTab(self.tab2,"Parcellation")
-        self.setCentralWidget(self.tabs)
+        self.subj.setChecked(True)
+        label = QLabel()
+        label.setScaledContents(True)
+        label.setFixedWidth(self.width)
+        label.setFixedHeight(self.height/4)
+        pixmap = QPixmap('view/parcellotron3000_logo.png')
+        label.setPixmap(pixmap)
+        widwid = QWidget()
+        big_layout = QVBoxLayout()
+        big_layout.addWidget(label)
+        big_layout.addWidget(self.tabs)
+        widwid.setLayout(big_layout)
+
+        self.setCentralWidget(widwid)
         self.setWindowTitle(self.title)
         self.setGeometry(self.left, self.top, self.width, self.height)
 
@@ -171,9 +184,8 @@ class MainFrame(QMainWindow):
         self.setStatusBar(self.statusBar)
         # self.statusBar().showMessage('Not all parameters have been set')
         self.statusBar.addWidget(QLabel('Not all parameters have been set'), 1)
-        self.statusBar.addWidget(QLabel('Another label'))
+        # self.statusBar.addWidget(QLabel('Another label'))
 
-        self.subj.setChecked(True)
 
         self.show()
 

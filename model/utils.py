@@ -164,15 +164,9 @@ def read_ROIs_from_nifti(path):
     # Create an index to the xyz coordinates of the voxels in each ROIs
     # seed_coord = np.transpose(np.where(ROIs)) for Tracto_mat
     seed_coord = np.where(ROIs)
-    print("seed coord shape")
-    print(np.array(seed_coord).shape)
-    print("ROIs shape")
-    print(np.array(ROIs).shape)
     # Create an index of the ROI associated with each row of the
     # (subsequently) created 2D_connectivity_matrix
     ROIs_labels = ROIs[seed_coord]
-    print("ROIs_labels shape")
-    print(ROIs_labels.shape)
     # Output seed_coord as a numba_voxels_by_3 array
     return np.array(seed_coord).T, ROIs_labels
 

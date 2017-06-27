@@ -203,8 +203,6 @@ class Parcellobject(metaclass=abc.ABCMeta):
                 print('I did not find the ' + k + ' file.')
             self.in_dict[k] = res
             boo = boo and (res != "")
-        print("The dictionary which is storing the inputs: ")
-        print(self.in_dict)
         return boo
 
     def init_temp_paths(self, path):
@@ -477,8 +475,6 @@ class Tracto_mat(Parcellobject):
 
         # (1)  Import the sparse matrix in binary Python format
         origmat_3cols = np.load(self.fdt_matrix_py_file)
-        print(origmat_3cols.shape)
-        print("Shape seed")
 
 
         # (2) Need to subtract 1 since in Python the subscripts start from 0
@@ -580,8 +576,6 @@ class Tracto_mat(Parcellobject):
         # We need self.seed_ind for the creation of the 2D connectivity matrix
         self.seed_ind, self.seed_coord = self.get_mask_indices(self.seed_mask)
 
-        print("Seed coord shape after get mask")
-        print(self.seed_coord.shape)
         if os.path.exists(self.seed_path):
             return ut.read_ROIs_from_nifti(self.seed_path)
         else:
