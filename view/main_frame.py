@@ -82,6 +82,8 @@ class MainFrame(QMainWindow):
         self.tab1.setLayout(vBoxlayout)
 
         # Tab 2 : Parcellation parameters
+        self.roisize_lay = QStackedLayout()
+        self.met_param_lay.addWidget(self.rotation)
         self.roisize_lay = QHBoxLayout()
         roisize_lbl = QLabel("Select the size of the ROIs")
         self.roisize_fld = QLineEdit()
@@ -166,8 +168,8 @@ class MainFrame(QMainWindow):
         self.subj.setChecked(True)
         label = QLabel()
         label.setScaledContents(True)
-        label.setFixedWidth(self.width)
-        label.setFixedHeight(self.height/4)
+        label.setMinimumWidth(self.width)
+        label.setMinimumHeight(self.height/4)
         pixmap = QPixmap('view/parcellotron3000_logo.png')
         label.setPixmap(pixmap)
         widwid = QWidget()
@@ -183,15 +185,13 @@ class MainFrame(QMainWindow):
         self.statusBar = QStatusBar()
         self.setStatusBar(self.statusBar)
         # self.statusBar().showMessage('Not all parameters have been set')
-        self.statusBar.addWidget(QLabel('Not all parameters have been set'), 1)
+        # self.statusBar.addWidget(QLabel('Not all parameters have been set'), 1)
         # self.statusBar.addWidget(QLabel('Another label'))
-
 
         self.show()
 
 
     def center(self):
-
         qr = self.frameGeometry()
         cp = QDesktopWidget().availableGeometry().center()
         qr.moveCenter(cp)
