@@ -7,6 +7,8 @@ Connectivity-Based Parcellation (CBP) has become one of the most interesting app
 
 The Parcellotron is a Connectivity-Based Parcellation software for the rest of us. It enables every researcher having access to tractography data to perform CBP from an intuitive graphical user interface, as well as from a command-line interface.
 
+The Parcellotron was created by **Leonardo Cerliani**, **Chris Foulon**, **Michel Thiebaut de Schotten** at the [BCBlab](http://bcblab.com/) of the [ICM](icm-institute.org/en/) in Paris and by **Daniel Margulies** and **Marcel Falkiewicz** at the [MPI for Human Cognitive and Brain Sciences](https://www.cbs.mpg.de/independent-research-groups/neuroanatomy-and-connectivity) in Leipzig.
+
 Installation
 ------------
 Follow this [link](http://github.com/chrisfoulon/Parcellotron) to clone or download the repository.
