@@ -1,6 +1,8 @@
 # Parcellotron
 ![Parcellotron GUI](https://dl.dropboxusercontent.com/u/13850642/PARCELLOTRON.gif)
 
+let's try whether <a href="www.google.com" target="_blank">this</a> works
+
 Introduction
 ------------
 Connectivity-Based Parcellation (CBP) has become one of the most interesting application of MRI-based tractography [1], [2], [3], [4], [5], [6]. So far however performing CBP required extensive coding and technical skills.
