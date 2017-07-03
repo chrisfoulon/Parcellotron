@@ -82,8 +82,6 @@ class MainFrame(QMainWindow):
         self.tab1.setLayout(vBoxlayout)
 
         # Tab 2 : Parcellation parameters
-        self.roisize_lay = QStackedLayout()
-        self.met_param_lay.addWidget(self.rotation)
         self.roisize_lay = QHBoxLayout()
         roisize_lbl = QLabel("Select the size of the ROIs")
         self.roisize_fld = QLineEdit()
@@ -192,6 +190,7 @@ class MainFrame(QMainWindow):
 
 
     def center(self):
+
         qr = self.frameGeometry()
         cp = QDesktopWidget().availableGeometry().center()
         qr.moveCenter(cp)
