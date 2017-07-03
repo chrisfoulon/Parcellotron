@@ -3,7 +3,7 @@
 
 Introduction
 ------------
-Connectivity-Based Parcellation (CBP) has become one of the most interesting application of MRI-based tractography [1], [2], [3], [4]. So far however performing CBP required extensive coding and technical skills.
+Connectivity-Based Parcellation (CBP) has become one of the most interesting application of MRI-based tractography [1], [2], [3], [4], [5], [6]. So far however performing CBP required extensive coding and technical skills.
 
 The Parcellotron is a Connectivity-Based Parcellation software for the rest of us. It enables every researcher having access to tractography data to perform CBP from an intuitive graphical user interface, as well as from a command-line interface.
 
@@ -28,7 +28,7 @@ Usage
 -----
 We explain here how to perform CBP using the omatrix1 output by FSL Fdt. A tutorial on the 4D format is coming soon.
 
-1. Perform the probabilistic tractography from every voxel inside a mask containing both the seed region you intend to parcellate, and the target region, e.g the whole brain (we will soon post a sample script on how to perform the tractography).
+1. Perform the probabilistic tractography from every voxel inside a mask containing both the seed region you intend to parcellate, and the target region, e.g the whole brain. You can learn how to do that on the [FSL Fdt User Guide](https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FDT/UserGuide)
  
 2. Create a folder structure similar to the one below. E.g. for a given subject *S_123456* create a subfolder *Tracto_mat* containing:
 	* the omat1 directory output which is output by the FSL Fdt tractography
@@ -60,7 +60,11 @@ References
 
 [3]: Cerliani, L, D’Arceuil, H, Thiebaut de Schotten, M (2016) Connectivity-based parcellation of the macaque frontal cortex, and its relation with the cytoarchitectonic distribution described in current atlases. Brain Struct Funct.
 
-[4]: Cloutman, LL, Lambon Ralph, MA (2012) Connectivity-based structural and functional parcellation of the human cortex using diffusion imaging and tractography. Front Neuroanat, 6:34.
+[4]: Goulas, A, Stiers, P, Hutchison, RM, Everling, S, Petrides, M, Margulies, DS (2017) Intrinsic functional architecture of the macaque dorsal and ventral lateral frontal cortex. J Neurophysiol, 117:1084–1099.
+
+[5]: Jakobsen, E, Liem, F, Klados, MA, Bayrak, Ş, Petrides, M, Margulies, DS (2016) Automated individual-level parcellation of Broca’s region based on functional connectivity. Neuroimage.
+
+[6]: Cloutman, LL, Lambon Ralph, MA (2012) Connectivity-based structural and functional parcellation of the human cortex using diffusion imaging and tractography. Front Neuroanat, 6:34.
 
 
 > Written with [StackEdit](https://stackedit.io/).
