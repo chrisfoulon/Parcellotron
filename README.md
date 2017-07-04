@@ -71,5 +71,5 @@ Funding
 -------
 The development of the Parcellotron was funded by grants from the [INCF](https://www.incf.org/) (International Neuroinformatics Coordinating Facility) and from the Association [Naturalia et Biologia](http://www.naturaliaetbiologia.fr/)
 
-![INCF](https://dl.dropboxusercontent.com/u/13850642/INCF_logo.svg)
+[INCF](https://dl.dropboxusercontent.com/u/13850642/INCF_logo.svg)
 
