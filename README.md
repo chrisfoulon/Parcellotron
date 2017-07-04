@@ -73,7 +73,7 @@ The development of the Parcellotron was funded by grants from the [INCF](https:/
 
 ![INCF](https://dl.dropboxusercontent.com/u/13850642/INCF_logo.svg)
 
-[INCF]: https://dl.dropboxusercontent.com/u/13850642/INCF_logo.svg "test"
+[INCF]: https://dl.dropboxusercontent.com/u/13850642/INCF_logo.svg
 
 
 
