@@ -34,7 +34,7 @@ We explain here how to perform CBP using the omatrix1 output by FSL Fdt. A tutor
 	* the omat1 directory output which is output by the FSL Fdt tractography
 	* two Nifti images, one for the seed region to be parcellated, the other for the target region, named respectively  *seedMask.nii.gz* and *targetMask.nii.gz* 
 	
-![Input_folder](https://dl.dropboxusercontent.com/u/13850642/folder_structure.png)
+![Input_folder](https://dl.dropboxusercontent.com/u/13850642/parcellotron_website/folder_structure.png)
 
 
 3.  Launch the Parcellotron with:
@@ -71,7 +71,8 @@ Funding
 -------
 The development of the Parcellotron was funded by grants from the [INCF](https://www.incf.org/) (International Neuroinformatics Coordinating Facility) and from the Association [Naturalia et Biologia](http://www.naturaliaetbiologia.fr/)
 
-[![INCF](https://dl.dropboxusercontent.com/u/13850642/INCF_logo.svg)](https://www.incf.org/)
+[![INCF](https://dl.dropboxusercontent.com/u/13850642/parcellotron_website/INCF_logo.svg)](https://www.incf.org/)
+[![NaturaliaBiologia](https://dl.dropboxusercontent.com/u/13850642/parcellotron_website/Naturalia_Biologia.jpg)](http://www.naturaliaetbiologia.fr/)
 
 
 
