@@ -1,5 +1,5 @@
 # Parcellotron
-![Parcellotron GUI](https://dl.dropboxusercontent.com/u/13850642/PARCELLOTRON.gif)
+![Parcellotron GUI](https://dl.dropboxusercontent.com/u/13850642/parcellotron_website/PARCELLOTRON.gif)
 
 Introduction
 ------------
