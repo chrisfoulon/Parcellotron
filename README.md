@@ -67,4 +67,8 @@ References
 [6]: Cloutman, LL, Lambon Ralph, MA (2012) Connectivity-based structural and functional parcellation of the human cortex using diffusion imaging and tractography. Front Neuroanat, 6:34.
 
 
-> Written with [StackEdit](https://stackedit.io/).
+Funding
+-------
+The development of the Parcellotron was funded by grants from the [INCF](https://www.incf.org/) (International Neuroinformatics Coordinating Facility) and from the Association [Naturalia et Biologia](http://www.naturaliaetbiologia.fr/)
+
+
