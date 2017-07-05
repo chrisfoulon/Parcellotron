@@ -222,7 +222,6 @@ def write_clusters(shape, affine, ROIs_labels, labels, seed_coord, res_dir,
     # prepare a vector of length nvox-in-seed = len(ROIlabels), to store
     # the cluster label for each voxel of the seed region
     ind_clusters = np.zeros(nvox)
-    import view.display_intermediates as di
 
 
     # To label each voxel with the corresponding cluster value we need to:
