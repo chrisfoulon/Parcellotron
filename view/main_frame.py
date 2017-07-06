@@ -93,6 +93,7 @@ class MainFrame(QMainWindow):
         self.transform_list.addItem("log2")
         self.transform_list.addItem("zscore")
         self.transform_list.addItem("log2_zscore")
+        self.transform_list.addItem("rank")
         self.transform_list.addItem("none")
 
         self.sim_list = QComboBox()

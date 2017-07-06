@@ -22,6 +22,22 @@ def matrix_log2(matrix):
 
     return matrix_log2
 
+def matrix_rank(matrix):
+    """ Rank the matrix values using the minimum rank in case of ties.
+    Parameters
+    ----------
+    matrix = 2D np.array
+        Typically a 2D matrix seed by target
+    Returns
+    -------
+    matrix_ranked : 2D np.array
+        ranks of connectivity_matrix
+    """
+    cmat = matrix + 0
+    matrix_ranked = st.rankdata(matrix, 'min')
+
+    return matrix_log2
+
 
 
 def matrix_zscore(matrix):

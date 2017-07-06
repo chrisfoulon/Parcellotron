@@ -264,6 +264,8 @@ class Parcellobject(metaclass=abc.ABCMeta):
             tr_mat_2D = mt.matrix_log2(self.co_mat_2D)
         if option in ['zscore', 'log2_zscore']:
             tr_mat_2D = mt.matrix_zscore(self.co_mat_2D)
+        if option = "rank":
+            tr_mat_2D = mt.matrix_rank(self.co_mat_2D)
         self.tr_mat_2D = tr_mat_2D
 
         return self.tr_mat_2D

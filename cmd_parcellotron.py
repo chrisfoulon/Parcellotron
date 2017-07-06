@@ -19,7 +19,7 @@ parser = argparse.ArgumentParser(description="Calculate the parcellation of\
 # The available modalities
 modality_arr = ['Tracto_4D', 'Tracto_mat']
 sim_mat_arr = ['covariance', 'correlation']
-mat_transform_arr = ['log2', 'zscore', 'log2_zscore', 'none']
+mat_transform_arr = ['log2', 'zscore', 'log2_zscore', 'rank', 'none']
 parcellation_method_arr = ['KMeans', 'PCA']
 rotation_arr = ['quartimax', 'varimax']
 
@@ -99,7 +99,7 @@ def parcellate_obj(group_level, files_arr, mod, size, transformation,
         subj_obj.mat_transform(transformation, mat_2D)
         subj_obj.similarity(sim_mat, subj_obj.tr_mat_2D)
         labels = subj_obj.parcellate(method, subj_obj.sim_mat, param_parcellate)
-        
+
         if not group_level:
             subj_obj.write_clusters()
         print("FINISHED !")
