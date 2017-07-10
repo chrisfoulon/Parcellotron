@@ -144,11 +144,11 @@ class MainFrame(QMainWindow):
         grid2.addLayout(met_lay, 0, 0)
         grid2.addLayout(self.met_param_lay, 0, 1)
         grid2.addLayout(self.roisize_lay, 2, 0)
-        grid2.addWidget(QLabel("Select the type of similarity matrix:"), 3, 0)
-        grid2.addWidget(self.sim_list, 4, 0)
         grid2.addWidget(QLabel("Select connectivity matrix tranformation:"),
-                        5, 0)
-        grid2.addWidget(self.transform_list, 6, 0)
+        3, 0)
+        grid2.addWidget(self.transform_list, 4, 0)
+        grid2.addWidget(QLabel("Select the type of similarity matrix:"), 5, 0)
+        grid2.addWidget(self.sim_list, 6, 0)
 
         run_box = QHBoxLayout()
         run_sub_box = QVBoxLayout()

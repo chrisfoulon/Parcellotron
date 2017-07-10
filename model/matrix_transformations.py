@@ -22,24 +22,6 @@ def matrix_log2(matrix):
 
     return matrix_log2
 
-def matrix_rank(matrix):
-    """ Rank the matrix values using the minimum rank in case of ties.
-    Parameters
-    ----------
-    matrix = 2D np.array
-        Typically a 2D matrix seed by target
-    Returns
-    -------
-    matrix_ranked : 2D np.array
-        ranks of connectivity_matrix
-    """
-    cmat = matrix + 0
-    matrix_ranked = st.rankdata(matrix, 'min')
-
-    return matrix_log2
-
-
-
 def matrix_zscore(matrix):
     """ Apply Z-score transformation on the matrix
     Parameters
@@ -80,6 +62,26 @@ def matrix_zscore(matrix):
     z_matrix = st.zscore(cmat)
 
     return z_matrix
+
+def matrix_rank(matrix):
+    """ Rank the matrix values using the minimum rank in case of ties.
+    Parameters
+    ----------
+    matrix = 2D np.array
+        Typically a 2D matrix seed by target
+    Returns
+    -------
+    matrix_ranked : 2D np.array
+        ranks of connectivity_matrix
+    """
+    print("The rank transformation is not yet implemented")
+    exit(0)
+
+    cmat = matrix + 0
+    print(np.array(cmat))
+    matrix_ranked = st.rankdata(np.array(cmat), 'min')
+
+    return matrix_ranked
 
 def rotate_components(phi, gamma = 1.0, q = 50, tol = 1e-6):
     """ Performs rotation of the loadings/eigenvectors
