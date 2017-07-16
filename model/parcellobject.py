@@ -152,13 +152,16 @@ class Parcellobject(metaclass=abc.ABCMeta):
         # Name of the 2D connectivity matrix file
         self.cmap2D_path = os.path.join(
             self.res_dir, self.subj_name + "_cmap2D.npy")
-
+        self.ind_zerostd = None
         if os.path.exists(self.cmap2D_path):
             self.co_mat_2D = np.load(self.cmap2D_path)
         else:
             # Create the 2D connectivity matrix if it does not exist
             self.co_mat_2D = self.read_inputs_into_2D()
             # Save the connectivity_matrix in an npy file
+            self.ind_zerostd = mt.find_novariance_col(self.co_mat_2D)
+            self.co_mat_2D = mt.filter_mat(self.co_mat_2D, self.ind_zerostd)
+
             np.save(self.cmap2D_path, self.co_mat_2D)
 
         self.set_final_shape()
@@ -267,6 +270,7 @@ class Parcellobject(metaclass=abc.ABCMeta):
         if option == "rank":
             tr_mat_2D = mt.matrix_rank(self.co_mat_2D)
         self.tr_mat_2D = tr_mat_2D
+        self.out_pref += option + '_'
 
         return self.tr_mat_2D
 
@@ -279,10 +283,13 @@ class Parcellobject(metaclass=abc.ABCMeta):
         mat: np.array
         """
         if option == 'covariance':
+            self.out_pref += 'cov_'
             sim_mat = sm.similarity_covariance(mat)
         if option == 'correlation':
+            self.out_pref += 'cor_'
             sim_mat = sm.similarity_correlation(mat)
         if option == 'distance':
+            self.out_pref += 'dis_'
             sim_mat = sm.similarity_distance(mat)
         self.sim_mat = sim_mat
         return self.sim_mat
@@ -599,7 +606,9 @@ class Tracto_mat(Parcellobject):
             print(' ')
             print('I need to create the seed ROIs.')
             print('This might take some time for large seed regions...')
-
+            print(self.seed_coord.shape)
+            print(type(self.seed_coord))
+            print(self.seed_coord)
             # t0 = time.time()
             ROIlabels = KMeans(n_clusters=k, n_init=10).fit_predict(
                 self.seed_coord)
@@ -729,6 +738,7 @@ class Tracto_mat(Parcellobject):
             ind_mask[i] = coord_dict[tuple(mask[i,:])]
 
         coord_mask = coord[ind_mask,:]
+
         # If u want to test, use the following lines
         # coord[ind_mask,:]
         # mask

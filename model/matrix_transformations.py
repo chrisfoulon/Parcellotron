@@ -46,18 +46,6 @@ def matrix_zscore(matrix):
     # connectivity_matrix[:,2396:2397] = np.zeros([nROIs,1])
     # connectivity_matrix[:,85:86] = np.zeros([nROIs,1])
     cmat = matrix + 0
-    nROIs = matrix.shape[0]
-
-    ind_zerostd = np.where(np.sum(cmat, axis=0) == 0)
-
-    if np.squeeze(ind_zerostd).any():
-        numba_voxels_zerostd = np.array(ind_zerostd).shape[1]
-        print("I found " + str(numba_voxels_zerostd) + " voxels with zero std.")
-        print("I will replace them with normally distributed random numbers")
-
-        cmat[:, [i for i in ind_zerostd]] =\
-            np.random.randn(nROIs, 1, numba_voxels_zerostd)
-
 
     z_matrix = st.zscore(cmat)
 
@@ -74,12 +62,9 @@ def matrix_rank(matrix):
     matrix_ranked : 2D np.array
         ranks of connectivity_matrix
     """
-    print("The rank transformation is not yet implemented")
-    exit(0)
 
     cmat = matrix + 0
-    print(np.array(cmat))
-    matrix_ranked = st.rankdata(np.array(cmat), 'min')
+    matrix_ranked = st.rankdata(np.array(cmat), 'min').reshape(cmat.shape)
 
     return matrix_ranked
 
@@ -158,3 +143,22 @@ def fit_power(eigvals_rot):
     # Establish the number of principal components on the basis of this
     npc = np.int(np.round(x0))
     return npc
+
+def find_novariance_col(matrix):
+    cmat = matrix + 0
+    ind_zerostd = np.where(np.sum(cmat, axis=0) == 0)
+
+    return ind_zerostd
+
+def filter_mat(mat, mask):
+    cmat = mat + 0
+    print("Debug--ind_zerostd: " + str(mask))
+    print("Debug--bad col: " + str(np.sum(mat[:,mask])))
+    if np.squeeze(mask).any():
+        numba_voxels_zerostd = np.array(mask).shape[1]
+        print("I found " + str(numba_voxels_zerostd) + " voxels with zero std.")
+        print("I will replace them with normally distributed random numbers")
+        cmat = np.delete(mat, mask, 1)
+        # cmat[:, [i for i in ind_zerostd]] =\
+        #     np.random.randn(nROIs, 1, numba_voxels_zerostd)
+    return cmat

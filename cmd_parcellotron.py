@@ -6,7 +6,6 @@ import time
 import os
 
 from sklearn.cluster import KMeans
-import matplotlib.pyplot as plt
 
 import model.parcellobject as pa
 import model.matrix_transformations as mt
@@ -40,7 +39,7 @@ parser.add_argument("-tp", "--target_pref", type=str, default='',
                     help="A prefix to find a particular targetMask file")
 parser.add_argument("modality", type=str, help="the input modality",
                     choices=modality_arr)
-parser.add_argument('-ROIs_size', type=int, default=0,
+parser.add_argument('-rs', '--ROIs_size', type=int, default=0,
                        help='The seed ROIs size in cubic millimeter (Only for \
                        Tracto_mat)')
 
@@ -95,10 +94,16 @@ def parcellate_obj(group_level, files_arr, mod, size, transformation,
 
 
         mat_2D = subj_obj.co_mat_2D
+        import view.display_intermediates as di
+        # di.mat_visualization(mat_2D)
 
-        subj_obj.mat_transform(transformation, mat_2D)
+        tr_mat = subj_obj.mat_transform(transformation, mat_2D)
+        # di.mat_visualization(subj_obj.tr_mat_2D)
+
         subj_obj.similarity(sim_mat, subj_obj.tr_mat_2D)
+        # di.mat_visualization(subj_obj.sim_mat)
         labels = subj_obj.parcellate(method, subj_obj.sim_mat, param_parcellate)
+
 
         if not group_level:
             subj_obj.write_clusters()

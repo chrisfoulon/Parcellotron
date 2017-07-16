@@ -169,7 +169,3 @@ def read_ROIs_from_nifti(path):
     ROIs_labels = ROIs[seed_coord]
     # Output seed_coord as a numba_voxels_by_3 array
     return np.array(seed_coord).T, ROIs_labels
-
-# nn = "banane_pattern_"
-# tt = find_in_filename("/data/BCBLab", nn)
-# print(tt)
