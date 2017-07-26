@@ -158,10 +158,11 @@ class Parcellobject(metaclass=abc.ABCMeta):
         else:
             # Create the 2D connectivity matrix if it does not exist
             self.co_mat_2D = self.read_inputs_into_2D()
-            # Save the connectivity_matrix in an npy file
-            self.ind_zerostd = mt.find_novariance_col(self.co_mat_2D)
-            self.co_mat_2D = mt.filter_mat(self.co_mat_2D, self.ind_zerostd)
+            # Find and delete the columns without variance (artifacts)
+            ind_zerostd = mt.find_novariance_col(self.co_mat_2D)
+            self.co_mat_2D = mt.filter_mat(self.co_mat_2D, ind_zerostd)
 
+            # Save the connectivity_matrix in an npy file
             np.save(self.cmap2D_path, self.co_mat_2D)
 
         self.set_final_shape()

@@ -10,6 +10,24 @@ import nibabel as nib
 
 
 class Parceller():
+    """ Object aiming to handle the parcellation with the chosen algorithm.
+    You create a Parceller by giving the method you want to use, the similarity
+    matrix, the path with (or without) the prefix where you want to store
+    temprary files and the parameters for the method (for instance the rotation
+    for the PCA).
+    Parameters
+    ----------
+    method: str {'PCA', 'KMeans'}
+    sim_mat: 2D np.array
+        The similarity matrix
+    out_path: str
+        The path with (or without) the prefix where you want to store
+        temprary files
+    param:
+
+    Attributes
+    ----------
+    """
     handled_methods = ['PCA', 'KMeans']
     rotation_PCA = ['quartimax', 'varimax']
     def __init__(self, method, sim_mat, out_path, param):
@@ -23,13 +41,15 @@ class Parceller():
             self.temp_files = [self.out_path + "ROI_clu.npy",
                                self.out_path + "ROI_clu_sort.npy"]
             self.param = param
-            self.labels = self.parcellate_PCA(sim_mat, self.out_path, self.param)
+            self.labels = self.parcellate_PCA(sim_mat, self.out_path,
+                                              self.param)
 
         if method == "KMeans":
             assert type(param) is int, "The number of cluster must be an int"
             self.temp_files = [self.out_path + "sim_mat_KMeans.npy"]
             self.param = param
-            self.labels = self.parcellate_KMeans(sim_mat, self.out_path, self.param)
+            self.labels = self.parcellate_KMeans(sim_mat, self.out_path,
+                                                 self.param)
 
     def parcellate_KMeans(self, sim_mat, path_pref, nb_clu):
         """ Parellate a 2D similarity matrix with the KMeans algorithm
@@ -40,8 +60,8 @@ class Parceller():
         nb_clu: int
             desired number of clusters
         path_pref: str
-            the path and the prefixes to add before the name of files which will be
-            created by the function
+            the path and the prefixes to add before the name of files which
+            will be created by the function
         Returns
         -------
         labels: np.array
@@ -50,7 +70,7 @@ class Parceller():
         """
         s_m = sim_mat + 0
         sim_mat = s_m
-        labels = KMeans(n_clusters=nb_clu, n_init=20).fit_predict(sim_mat)
+        labels = KMeans(n_clusters=nb_clu, n_init=30).fit_predict(sim_mat)
 
         IDX_CLU = np.argsort(labels)
 
@@ -71,8 +91,8 @@ class Parceller():
         rot: str ['quartimax', 'varimax']
             Type of factor rotation
         path_pref: str
-            the path and the prefixes to add before the name of files which will be
-            created by the function
+            the path and the prefixes to add before the name of files which
+            will be created by the function
         Returns
         -------
         labels: np.array
@@ -197,7 +217,7 @@ class Parceller():
             tmp = np.where(ROI_clu[:,i])
             nROIs_ith_clu = np.array(tmp).shape[1]
             stoprow = startrow + nROIs_ith_clu
-            ROI_clu_sort[startrow : (nROIs_ith_clu + startrow),i] = 1
+            ROI_clu_sort[startrow : (nROIs_ith_clu + startrow), i] = 1
             startrow = stoprow
 
         # plt.imshow(ROI_clu_sort, aspect='auto', interpolation='none');
@@ -215,6 +235,22 @@ def write_clusters(shape, affine, ROIs_labels, labels, seed_coord, res_dir,
                    out_pref):
     """ Write the clusters in a nifti 3D image where the voxels values are
     the cluster labels
+    Parameters
+    ----------
+    shape:
+
+    affine:
+
+    ROIs_labels:
+
+    labels:
+
+    seed_coord:
+
+    res_dir:
+
+    out_pref:
+
     """
     # Create an empty volume to store the clusters
     nii_mask = np.zeros(shape)
@@ -223,12 +259,13 @@ def write_clusters(shape, affine, ROIs_labels, labels, seed_coord, res_dir,
     # the cluster label for each voxel of the seed region
     ind_clusters = np.zeros(nvox)
 
-
     # To label each voxel with the corresponding cluster value we need to:
     # (1) retrieve the voxel index (2D matrix row) for each ROI
     # (2) assign the same cluster value for all voxels in an ROI
     for ith_ROI in np.arange(len(labels)):
-        ind_ith_clu = np.array(np.where(ROIs_labels == ith_ROI))  # (1)
+        # Here we have the indices of the voxels belonging to the ith_ROI ROI
+        # + 1 is because ROIs_labels start at 1.
+        ind_ith_clu = np.array(np.where(ROIs_labels == ith_ROI + 1))  # (1)
         ind_clusters[ind_ith_clu] = labels[ith_ROI] + 1 # (2)
 
 
@@ -236,9 +273,8 @@ def write_clusters(shape, affine, ROIs_labels, labels, seed_coord, res_dir,
     # for each voxel and we assign that value in the corresponding xyz
     # coordinates
     for jth_vox in np.arange(nvox):
-        vox = seed_coord[jth_vox,:].astype('int64')
+        vox = seed_coord[jth_vox,:].astype('int')
         nii_mask[vox[0], vox[1], vox[2]] = ind_clusters[jth_vox]
-
 
     nii_cluster = nib.Nifti1Image(nii_mask, affine)
 

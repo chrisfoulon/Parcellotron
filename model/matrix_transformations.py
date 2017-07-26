@@ -87,16 +87,17 @@ def rotate_components(phi, gamma = 1.0, q = 50, tol = 1e-6):
     """
     p,k = phi.shape
     r = np.eye(k)
-    d=0
+    d = 0
     for i in np.arange(q):
         d_old = d
         Lambda = np.dot(phi, r)
-        u,s,vh = np.linalg.svd(np.dot(phi.T,np.asarray(Lambda)**3 - (gamma/p) *\
-                         np.dot(Lambda, np.diag(np.diag(np.dot(
-                             Lambda.T,Lambda))))))
+        u,s,vh = np.linalg.svd(np.dot(
+            phi.T,np.asarray(Lambda)**3 - (gamma/p) * np.dot(
+                Lambda, np.diag(np.diag(np.dot(Lambda.T,Lambda))))))
         r = np.dot(u, vh)
         d = np.sum(s)
-        if d_old != 0 and d / d_old < 1 + tol: break
+        if d_old != 0 and d / d_old < 1 + tol:
+            break
     return np.dot(phi, r)
 
 def fit_power(eigvals_rot):
@@ -124,7 +125,7 @@ def fit_power(eigvals_rot):
         return amp * (x ** exponent)
 
     # Define a number of x points corresponding to len(L)
-    xL = np.arange(len(L))+1
+    xL = np.arange(len(L)) + 1
 
     # Perform curve fitting
     popt, _ = curve_fit(powerfunc, xL, L, method='lm')
@@ -138,7 +139,7 @@ def fit_power(eigvals_rot):
     i0 = np.where(d == np.min(d))
 
     x0 = x[np.squeeze(i0)]
-    y0 = y[np.squeeze(i0)]
+    # y0 = y[np.squeeze(i0)]
 
     # Establish the number of principal components on the basis of this
     npc = np.int(np.round(x0))
@@ -146,19 +147,17 @@ def fit_power(eigvals_rot):
 
 def find_novariance_col(matrix):
     cmat = matrix + 0
+    print("Debug--cmat_shape: " + str(cmat.shape))
     ind_zerostd = np.where(np.sum(cmat, axis=0) == 0)
 
     return ind_zerostd
 
 def filter_mat(mat, mask):
     cmat = mat + 0
-    print("Debug--ind_zerostd: " + str(mask))
-    print("Debug--bad col: " + str(np.sum(mat[:,mask])))
+    # nROIs = cmat.shape[0]
     if np.squeeze(mask).any():
         numba_voxels_zerostd = np.array(mask).shape[1]
         print("I found " + str(numba_voxels_zerostd) + " voxels with zero std.")
-        print("I will replace them with normally distributed random numbers")
-        cmat = np.delete(mat, mask, 1)
-        # cmat[:, [i for i in ind_zerostd]] =\
-        #     np.random.randn(nROIs, 1, numba_voxels_zerostd)
+        print("I will ignore them from the anaylisis")
+        cmat = np.delete(mat, mask, axis=1)
     return cmat
