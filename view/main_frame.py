@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import os
 import sys
 import subprocess
 
@@ -169,7 +170,9 @@ class MainFrame(QMainWindow):
         label.setScaledContents(True)
         label.setMinimumWidth(self.width)
         label.setMinimumHeight(self.height/4)
-        pixmap = QPixmap('view/parcellotron3000_logo.png')
+        pixmap = QPixmap(
+            os.path.join(os.path.dirname(__file__),
+                         'parcellotron3000_logo.png'))
         label.setPixmap(pixmap)
         widwid = QWidget()
         big_layout = QVBoxLayout()

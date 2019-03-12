@@ -118,6 +118,7 @@ class Parcellobject(metaclass=abc.ABCMeta):
 
         self.res_dir = os.path.join(self.input_dir, "_" +
                                     Parcellobject.software_name + "_results")
+        # You know a better way
         if not os.path.exists(self.res_dir):
             print("The result directory is: " + self.res_dir)
             os.mkdir(self.res_dir)
@@ -607,9 +608,8 @@ class Tracto_mat(Parcellobject):
             print(' ')
             print('I need to create the seed ROIs.')
             print('This might take some time for large seed regions...')
-            print(self.seed_coord.shape)
-            print(type(self.seed_coord))
-            print(self.seed_coord)
+            print("Debug--seed_coord_shape: " + str(self.seed_coord.shape))
+            print("Debug--seed_coord: " + str(self.seed_coord))
             # t0 = time.time()
             ROIlabels = KMeans(n_clusters=k, n_init=10).fit_predict(
                 self.seed_coord)
@@ -702,6 +702,9 @@ class Tracto_mat(Parcellobject):
         coord = np.genfromtxt(
             self.in_dict[self.in_names['fdt_coord']])[:,0:3].astype('int')
 
+        print("Debug--genfromtxt: " + str(coord[0].shape))
+        print("Debug--genfromtxt shape: " + str(coord.shape))
+
         # Read the [mask_path].nii.gz
         masknii = nib.load(mask_path).get_data()
 
@@ -739,6 +742,9 @@ class Tracto_mat(Parcellobject):
             ind_mask[i] = coord_dict[tuple(mask[i,:])]
 
         coord_mask = coord[ind_mask,:]
+
+        print("Debug--EQUALS: " + str(coord == coord_mask))
+        print("Debug--coord_mask: " + str(coord_mask))
 
         # If u want to test, use the following lines
         # coord[ind_mask,:]
