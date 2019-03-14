@@ -217,11 +217,16 @@ u, gamma_eigval, omega = np.linalg.svd(cov, full_matrices=True)
 # SVD third output is the transposed of the eigen vectors
 # omega_eigvec = omega.T
 pd.DataFrame(omega.T)
+# First normalization using the communalities
 svd_vec = pd.DataFrame(omega.T.dot(np.diag(np.sqrt(np.abs(gamma_eigval)))))
 gamma_eigval, omega_eigvec = np.linalg.eig(cov)
 eig_vec = pd.DataFrame(omega_eigvec.dot(np.diag(np.sqrt(np.abs(gamma_eigval)))))
 
+# Choose the signs
 np.sign(svd_vec)
+svd_vec.where(np.sign(svd_vec) == 1.0)
+svd_vec.where(np.sign(svd_vec) == -1.0)
+svd_vec.apply(np.where)
 [len(np.where(np.sign(svd_vec[[i]]) == -1.0)[0]) for i in range(0, len(eig_vec))]
 arr_svd = np.array(svd_vec)
 arr_eig = np.array(eig_vec)
